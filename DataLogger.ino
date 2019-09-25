@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <HardwareSerial.h>
 #include <DS1307.h>
+#include <TimerOne.h>
 
 #include "Button.h"
 #include "LCD_Menu.h"
@@ -44,7 +45,7 @@ byte pwmLevel = 0;
 const byte ledPin = LED_BUILTIN;
 bool ledState = LOW;
 char* ledState_text;
-
+const byte SSR = 30;
 
 // Variable 'analogValue' is later configured to be printed on the display.
 // This time a static variable is used for holding the previous analog value.
@@ -77,39 +78,7 @@ void copy(char* src, char* dst, int len) {
     dst[len+1] = '\0';
 }
 
-void setup() {
-    Serial.begin(115200);
-    lcd.begin(40, 2);
 
-    lcd.print("Unioeste-CSC");
-
-    initRTC();
-    initMenu();
-
-    SPI.begin();
-
-    //Configura os pinos de seleção de sensores como saida em nivel alto.
-    for(uint8_t i = 0; i < numberOfSensors; ++i){
-        pinMode(sensorCSPINs[i], OUTPUT);
-        digitalWrite(sensorCSPINs[i], HIGH);
-    }
-
-    delay(1000);
-
-    lcd.clear();
-    lcd.println("Initialize the SD");
-
-    //Initialize the SD.
-    if (!sd.begin(SD_CONFIG)) {
-        sd.initErrorHalt(&Serial);
-        sdcardOK = false;
-        lcd.print("Falha no SD");
-    }else {
-        sdcardOK = true;
-    }
-
-    delay(1000);
-}
 
 void SensorsLogSDCard(uint8_t numberOfSensors, uint8_t* sensorCSPINs){
 
@@ -167,12 +136,9 @@ void updateLoggingTime(){
     Serial.println();
 }
 
-void loop() {
-    static unsigned int period = 500;
-
-    checkButtons();
-
-    // Periodically updates lcd.
+void updateLcd(const unsigned int period)
+{
+     // Periodically updates lcd.
     static unsigned long lastMillisLCD = 0;
     if(millis() - lastMillisLCD > period) {
         lastMillisLCD = millis();
@@ -181,13 +147,18 @@ void loop() {
         copy(rtc.getTimeStr(FORMAT_LONG), strTime, 9);
         systemMenu.update();
     }
+}
 
+void logTemp(const unsigned int period)
+{
+    // Periodically logging temperature sensors.
     static unsigned long lastMillis = 0;
-    if(millis() - lastMillis > 2*period) {
-            lastMillis = millis();
-
-        // Periodically logging temperature sensors.
-        if(logging){
+    if(millis() - lastMillis > 2*period)
+    {
+        lastMillis = millis();
+        
+        if(logging)
+        {
             Time t;
 
             t = rtc.getTime();
@@ -198,7 +169,8 @@ void loop() {
             Serial.print(nextLoggingTime);
             Serial.println();
 
-            if(actualTime == nextLoggingTime) {
+            if(actualTime == nextLoggingTime)
+            {
                 lcd.print("Salvando...");
 
                 updateLoggingTime();
@@ -210,7 +182,8 @@ void loop() {
                 copy(rtc.getDateStr(FORMAT_SHORT, FORMAT_LITTLEENDIAN, '/'), strDate, 11);
                 copy(rtc.getTimeStr(FORMAT_LONG), strTime, 9);
 
-                if(sdcardOK){
+                if(sdcardOK)
+                {
                     SensorsLogSDCard(numberOfSensors, sensorCSPINs);
                 }
 
@@ -218,4 +191,71 @@ void loop() {
             }
         }
     }
+}
+
+float readOilTemp(void)
+{
+    //read temperature of sensor on cs pin 49
+    return thermoparK.readCelcius(49);
+}
+
+void heatOil(void){
+    if(readOilTemp() < 100)
+    {
+        digitalWrite(SSR, HIGH);
+    }else{
+        digitalWrite(SSR, LOW);
+    }
+}
+
+
+void setup() {
+    Serial.begin(115200);
+    lcd.begin(40, 2);
+
+    pinMode(SSR, OUTPUT);
+    digitalWrite(SSR, LOW);
+
+    Timer1.initialize(500000); // Inicializa o Timer1 e configura para um período de 0,5 segundos
+    Timer1.attachInterrupt(heatOil);
+    
+    lcd.print("Unioeste-CSC");
+
+    initRTC();
+    initMenu();
+
+    SPI.begin();
+
+    //Configura os pinos de seleção de sensores como saida em nivel alto.
+    for(uint8_t i = 0; i < numberOfSensors; ++i){
+        pinMode(sensorCSPINs[i], OUTPUT);
+        digitalWrite(sensorCSPINs[i], HIGH);
+    }
+
+    delay(1000);
+
+    lcd.clear();
+    lcd.println("Initialize the SD");
+
+    //Initialize the SD.
+    if (!sd.begin(SD_CONFIG)) {
+        sd.initErrorHalt(&Serial);
+        sdcardOK = false;
+        lcd.print("Falha no SD");
+    }else {
+        sdcardOK = true;
+    }
+
+    delay(1000);
+}
+
+void loop()
+{
+    static unsigned int period = 500;
+
+    checkButtons();
+    updateLcd(period);
+    logTemp(period);
+    
+    //readAmbientTemp(); TODO
 }
