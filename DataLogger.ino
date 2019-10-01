@@ -32,6 +32,8 @@ extern SdFs sd;
 extern FsFile file;
 extern char line[40];
 
+String SDCardFileName; //ex. 15d05m2019_15h30
+
 char* strTime = (char*)"00:00:00";
 char* strDate = (char*)"00/00/0000";
 
@@ -45,7 +47,7 @@ byte pwmLevel = 0;
 const byte ledPin = LED_BUILTIN;
 bool ledState = LOW;
 char* ledState_text;
-const byte SSR = 30;
+const byte SSR = 11;
 
 // Variable 'analogValue' is later configured to be printed on the display.
 // This time a static variable is used for holding the previous analog value.
@@ -78,33 +80,35 @@ void copy(char* src, char* dst, int len) {
     dst[len+1] = '\0';
 }
 
-
-
 void SensorsLogSDCard(uint8_t numberOfSensors, uint8_t* sensorCSPINs){
+    Serial.print("Salvando no arquivo: ");
+    Serial.println(SDCardFileName);
 
-    if (!file.open("TempLog.csv", FILE_WRITE)) {
+    char fileName[17];
+
+    SDCardFileName.toCharArray(fileName, 17);
+    
+    if (!file.open(fileName, FILE_WRITE)) 
+    {
         error("open failed");
     }
 
+    file.print(strDate);
+    file.print(';');
+    file.print(strTime);
+    file.print(';');
+    
     double temperature;
-    for(int8_t i = 0; i < numberOfSensors; i++) {
-
+    for(int8_t i = 0; i < numberOfSensors; i++)
+    {
         temperature = static_cast<double>(thermoparK.readCelcius(sensorCSPINs[i]));
-
-        // Write test data.
-        file.print(strDate);
+        file.print(temperature);        
         file.print(';');
-        file.print(strTime);
-        file.print(';');
-        file.print(temperature);
-        file.print(i);
-        file.println();
     }
 
+    file.println();
+    
     file.close();
-    Serial.println();
-    Serial.println();
-    delay(500);
 }
 
 void SensorsLogSerial(uint8_t numberOfSensors, uint8_t* sensorCSPINs){
@@ -122,25 +126,19 @@ void SensorsLogSerial(uint8_t numberOfSensors, uint8_t* sensorCSPINs){
 
     Serial.println();
     Serial.println();
-    delay(500);
 }
 
 void updateLoggingTime(){
     nextLoggingTime += loggingInterval;
-    Serial.print("   novoLogTime: ");
-    Serial.print(nextLoggingTime);
-    Serial.println();
     nextLoggingTime = nextLoggingTime % 60;
-    Serial.print("   novoLogTime%60: ");
-    Serial.print(nextLoggingTime);
-    Serial.println();
 }
+
 
 void updateLcd(const unsigned int period)
 {
      // Periodically updates lcd.
     static unsigned long lastMillisLCD = 0;
-    if(millis() - lastMillisLCD > period) {
+    if(millis() - lastMillisLCD > period*2) {
         lastMillisLCD = millis();
 
         copy(rtc.getDateStr(FORMAT_SHORT, FORMAT_LITTLEENDIAN, '/'), strDate, 11);
@@ -156,6 +154,8 @@ void logTemp(const unsigned int period)
     if(millis() - lastMillis > 2*period)
     {
         lastMillis = millis();
+
+        SensorsLogSerial(numberOfSensors, sensorCSPINs);
         
         if(logging)
         {
@@ -163,21 +163,11 @@ void logTemp(const unsigned int period)
 
             t = rtc.getTime();
             actualTime = t.min;
-            Serial.print("Time: ");
-            Serial.print(actualTime);
-            Serial.print("   LogTime: ");
-            Serial.print(nextLoggingTime);
-            Serial.println();
 
             if(actualTime == nextLoggingTime)
             {
                 lcd.print("Salvando...");
-
                 updateLoggingTime();
-                Serial.print("   NextLogTime: ");
-                Serial.print(nextLoggingTime);
-                Serial.println();
-
                 lcd.clear();
                 copy(rtc.getDateStr(FORMAT_SHORT, FORMAT_LITTLEENDIAN, '/'), strDate, 11);
                 copy(rtc.getTimeStr(FORMAT_LONG), strTime, 9);
@@ -185,9 +175,7 @@ void logTemp(const unsigned int period)
                 if(sdcardOK)
                 {
                     SensorsLogSDCard(numberOfSensors, sensorCSPINs);
-                }
-
-                SensorsLogSerial(numberOfSensors, sensorCSPINs);
+                }                
             }
         }
     }
@@ -195,17 +183,29 @@ void logTemp(const unsigned int period)
 
 float readOilTemp(void)
 {
-    //read temperature of sensor on cs pin 49
-    return thermoparK.readCelcius(49);
+    //read temperature of sensor on cs pin 40
+    return thermoparK.readCelcius(40);
 }
 
 void heatOil(void){
-    if(readOilTemp() < 100)
+    //Timer1.stop();
+    
+    extern uint8_t ledLogState;
+    bool logging = digitalRead(ledLogState); 
+    
+    double temperature = readOilTemp();
+
+    Serial.print("Oil temp: ");
+    Serial.println(temperature);
+    
+    if(temperature < 60 && logging)
     {
         digitalWrite(SSR, HIGH);
     }else{
         digitalWrite(SSR, LOW);
     }
+
+    //Timer1.start();
 }
 
 
@@ -215,10 +215,7 @@ void setup() {
 
     pinMode(SSR, OUTPUT);
     digitalWrite(SSR, LOW);
-
-    Timer1.initialize(500000); // Inicializa o Timer1 e configura para um período de 0,5 segundos
-    Timer1.attachInterrupt(heatOil);
-    
+  
     lcd.print("Unioeste-CSC");
 
     initRTC();
@@ -247,15 +244,20 @@ void setup() {
     }
 
     delay(1000);
+
+    Timer1.initialize(500000); // Inicializa o Timer1 e configura para um período de 0,5 segundos
+    Timer1.attachInterrupt(heatOil);
 }
 
 void loop()
 {
     static unsigned int period = 500;
 
+    //noInterrupts();
     checkButtons();
     updateLcd(period);
     logTemp(period);
+    //interrupts();
     
     //readAmbientTemp(); TODO
 }
