@@ -23,6 +23,10 @@ extern HardwareSerial Serial;
 extern Time time;
 extern DS1307 rtc;
 
+extern char* strTime;
+extern char* strDate;
+extern String SDCardFileName; //ex. 15d05m2019_15h30
+
 // Indicator symbol definition, it will change the default symbol for the right focus.
 // http://omerk.github.io/lcdchargen/
 static uint8_t chrUpDown[8] = {
@@ -278,6 +282,16 @@ void checkButtons(){
         Time t;
         t = rtc.getTime();
         actualTime = nextLoggingTime = t.min;
+
+        SDCardFileName = strDate;
+        SDCardFileName.concat("Y_");
+        SDCardFileName.concat(strTime);
+        SDCardFileName.setCharAt(2, 'D');
+        SDCardFileName.setCharAt(5, 'M');
+        SDCardFileName.setCharAt(12, 'h');
+        SDCardFileName.setCharAt(15, 'm');
+        SDCardFileName.concat("s.csv");
+        Serial.println(SDCardFileName);                
     }
 }
 
