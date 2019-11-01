@@ -30,6 +30,6 @@ SPISensor::read16(uint8_t pin){
     delayMicroseconds(100);
     uint16_t data = SPI.transfer16(0xFFFF);
     digitalWrite(pin, HIGH);
-    
+    delay(10);
     return data;
 }
