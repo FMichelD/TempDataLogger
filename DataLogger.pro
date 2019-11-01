@@ -40,11 +40,13 @@ INCLUDEPATH += "C:\Users\FMichelD2\Documents\Arduino\libraries\SdFs-master\src\F
 INCLUDEPATH += "C:\Users\FMichelD2\Documents\Arduino\libraries\SdFs-master\src\iostream"
 INCLUDEPATH += "C:\Users\FMichelD2\Documents\Arduino\libraries\SdFs-master\src\SdCard"
 INCLUDEPATH += "C:\Users\FMichelD2\Documents\Arduino\libraries\SdFs-master\src\SpiDriver"
+INCLUDEPATH += "C:\Users\FMichelD2\Documents\Arduino\libraries\TimerOne-r11"
 
 INCLUDEPATH += "E:\FMichelD\Workspace\DataLogger"
 
 SOURCES += \
     DataLogger.ino \
+    SDCardManager.cpp \
     rtc.cpp \
     DateTime.cpp \
     SPISensor.cpp \
@@ -54,6 +56,7 @@ HEADERS += \
     Button.h \
     DateTime.h \
     LCD_Menu.h \
+    SDCardManager.h \
     rtc.h \
     sdcardlog.h \
     SPISensor.h \

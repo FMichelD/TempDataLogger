@@ -2,19 +2,19 @@
 #define LCD_MENU_H
 #pragma once
 
-#include <LiquidCrystal.h>
-#include <LiquidMenu.h>
-#include <DS1307.h>
-
+#include "LCDManager.h"
 #include "Button.h"
 #include "DateTime.h"
 #include "rtc.h"
-#include "DataStructs.h"
-#include "SDCardManager.h"
+
+#include <LiquidCrystal.h>
+#include <LiquidMenu.h>
+#include <DS1307.h>
+#include <stdint.h>
 
 //Pin 12 as led state for logging
 static uint8_t ledLogState = 12;
-static uint8_t dateTimeSafeable = false;
+static uint8_t dateTimveSalvable = false;
 
 static bool TempFixed = true;
 static bool TempCicled = !TempFixed;
@@ -31,7 +31,6 @@ extern DS1307 rtc;
 extern char* strTime;
 extern char* strDate;
 extern String SDCardFileName; //ex. 15d05m2019_15h30
-
 
 // Indicator symbol definition, it will change the default symbol for the right focus.
 // http://omerk.github.io/lcdchargen/
@@ -68,12 +67,6 @@ extern uint8_t minute;
 extern char* strDate;
 extern char* strTime;
 
-extern TemperatureLimits tl;
-extern uint32_t actualTempTime;
-static uint32_t currentTempTime; 
-extern uint32_t minTempTime;
-extern uint32_t maxTempTime;
-
 enum keys {
     keyUp = 1,
     keyDown = 2
@@ -88,22 +81,12 @@ static Button downButton(23, pullup);
 static Button enterButton(24, pullup);
 static Button logButton(27, pullup);
 
-// Pin mapping for the display
-const uint8_t LCD_RS = 7;
-const uint8_t LCD_E = 6;
-const uint8_t LCD_D4 = 5;
-const uint8_t LCD_D5 = 4;
-const uint8_t LCD_D6 = 3;
-const uint8_t LCD_D7 = 2;
-//LCD R/W pin to ground
-//10K potentiometer to VO
+
 
 bool isTempFixed(void)
 {
     return  TempFixed;
 }
-
-static LiquidCrystal lcd(LCD_RS, LCD_E, LCD_D4, LCD_D5, LCD_D6, LCD_D7);
 
 // A LiquidLine object can be used more that once.
 static LiquidLine backLine(11, 1, "Voltar");
@@ -123,12 +106,7 @@ static LiquidLine dateLine(1, 0, "Ajustar data-hora");
 static LiquidLine loggingLine(1, 1, "Config LOG");
 static LiquidScreen dateTimeScreen(dateLine, loggingLine);
 
-//Set logging interval sub-menu
-static LiquidLine setTempFixLine(1, 0, "Temp. Fixo: ", TempFixed);
-static LiquidLine setTempCicleLine(1, 1, "Temp Ciclos: ", TempCicled);
-static LiquidScreen setTempModeScreen(setTempFixLine, setTempCicleLine);
-
-static LiquidMenu mainMenu(lcd, welcomeScreen, defaultScreen, dateTimeScreen, setTempModeScreen);
+static LiquidMenu mainMenu(lcd, defaultScreen, dateTimeScreen, 1);
 
 //Set Date-Time sub-menu
 static LiquidLine setYearLine(1, 0, "Ano: ", year);
@@ -149,15 +127,20 @@ static LiquidScreen saveDateTimeScreen(backLine);
 static LiquidLine setLoggingLine(1, 0, "Log invervalo: ", loggingInterval);
 static LiquidScreen loggingScreen(setLoggingLine, backLine);
 
+//Set logging interval sub-menu
+static LiquidLine setTempFixLine(1, 0, "Temp. Fixo: ", TempFixed);
+static LiquidLine setTempCicleLine(1, 1, "Temp Ciclos: ", TempCicled);
+static LiquidScreen setTempModeScreen(setLoggingLine, backLine);
+
 //Create System-Menu
 static LiquidMenu dateTimeMenu(lcd, setYearMonthScreen, setDaysScreen, setHourScreen, saveDateTimeScreen);
 static LiquidMenu loggingMenu(lcd, loggingScreen);
-static LiquidMenu temperatureTypeMenu(lcd, setTempModeScreen);
+static LiquidMenu temperatureTypeMenu(lcd, loggingScreen);
 
 static LiquidSystem systemMenu(mainMenu, dateTimeMenu, loggingMenu, temperatureTypeMenu);
 
 void gotoDateMenu() {
-    dateTimeSafeable = true;
+    dateTimveSalvable = true;
     systemMenu.change_menu(dateTimeMenu);
 }
 
@@ -166,11 +149,11 @@ void saveDateTime(){
     rtc.setDOW(dayOfWeek);      //Define o dia da semana
     rtc.setTime(hour, minute, 0);     //Define o horario
     rtc.setDate(dayOfMonth, month, year);   //Define o dia, mes e ano
-    dateTimeSafeable = false;
+    dateTimveSalvable = false;
 }
 
 void goBack() {
-    if(dateTimeSafeable)
+    if(dateTimveSalvable)
         saveDateTime();
 
     // This function takes reference to the wanted menu.
@@ -214,17 +197,6 @@ void downLogInterval(){
     }
 }
 
-void changeTempMode(void)
-{
-    TempFixed = !TempFixed;
-    TempCicled = !TempCicled; 
-    systemMenu.update();
-    Serial.print("TempFixed: ");
-    Serial.println(TempFixed);
-    Serial.print("TempCicled: ");
-    Serial.println(TempCicled);
-}
-
 void initMenu() {
     // Sets the focus position for this lines to be on the left.
     dateLine.set_focusPosition(Position::LEFT);
@@ -234,8 +206,6 @@ void initMenu() {
     setDayOfMonthLine.set_focusPosition(Position::LEFT);
     setHourLine.set_focusPosition(Position::LEFT);
     setMinuteLine.set_focusPosition(Position::LEFT);
-
-    setTempFixLine.set_focusPosition(Position::LEFT);
 
     backLine.set_focusPosition(Position::LEFT);
 
@@ -273,10 +243,6 @@ void initMenu() {
     setLoggingLine.attach_function(keyUp, upLogInterval);
     setLoggingLine.attach_function(keyDown, downLogInterval);
 
-    setTempFixLine.attach_function(keyUp, changeTempMode);
-    setTempFixLine.attach_function(keyDown, changeTempMode);
-
-
     // Changes the left focus symbol.
     systemMenu.set_focusSymbol(Position::LEFT, chrUpDown);
 
@@ -284,21 +250,6 @@ void initMenu() {
 
     pinMode(ledLogState, OUTPUT);
     digitalWrite(ledLogState, LOW);
-}
-
-
-void initTempCicle()
-{  
-    getNewTempCondiction(&tl);
-       
-    Time t;
-    t = rtc.getTime();
-    actualTempTime = (t.date * 24 * 3600) + (t.hour * 360) + (t.min * 60) + t.sec;
-    currentTempTime = actualTempTime;
-    minTempTime = (actualTempTime + tl.minTime);
-    maxTempTime = (actualTempTime + tl.maxTime);
-
-    Serial.println("Inicializado Temperatura Ciclica");
 }
 
 void checkButtons(){
@@ -330,6 +281,7 @@ void checkButtons(){
         systemMenu.set_focusSymbol(Position::LEFT, chrUpDown);
         systemMenu.switch_focus();
     }
+    
     if(logButton.check() == LOW){
         Serial.println("Button LOG pressed");
         digitalWrite(ledLogState, !digitalRead(ledLogState));
@@ -347,12 +299,7 @@ void checkButtons(){
         SDCardFileName.setCharAt(12, 'h');
         SDCardFileName.setCharAt(15, 'm');
         SDCardFileName.concat("s.csv");
-        Serial.println(SDCardFileName); 
-
-        if(!TempFixed)
-        {
-            initTempCicle();
-        }                       
+        Serial.println(SDCardFileName);                
     }
 }
 

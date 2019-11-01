@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 #include <SPI.h>
-#include <WString.h>
+//#include <WString.h>
 
 class SPISensor
 {
