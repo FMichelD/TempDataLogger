@@ -159,6 +159,7 @@ void SensorsLogSerial(uint8_t numberOfSensors, uint8_t* sensorCSPINs)
 
         temperature[i] = static_cast<double>(thermoparK.readCelcius(sensorCSPINs[i]));
 
+<<<<<<< HEAD
         switch(sensorCSPINs[i]){
             case 34:
                 Serial.print("Oleo_01: ");
@@ -181,6 +182,30 @@ void SensorsLogSerial(uint8_t numberOfSensors, uint8_t* sensorCSPINs)
         Serial.println(temperature[i]);
         digitalWrite(sensorCSPINs[i], HIGH);
         delay(250);
+=======
+//        switch(sensorCSPINs[i]){
+//            case 34:
+//                Serial.print("Oleo_01: ");
+//                break;
+//            
+//            case 33:
+//                Serial.print("Oleo_02: ");
+//                break;
+//            
+//            case 31:
+//                Serial.print("TAmb: ");
+//                break;
+//            
+//            default:
+//                Serial.print("Sensor ");
+//                Serial.print(i);
+//                Serial.print(": ");
+//        }
+        
+//        Serial.println(temperature[i]);
+//        digitalWrite(sensorCSPINs[i], HIGH);
+//        delay(250);
+>>>>>>> d8899fa... Iniicio do  Cliclico bugadaco
     }
     Serial.println();
 
@@ -215,6 +240,7 @@ double readOilTemp(void)
 }
 
 void heatOil(void)
+<<<<<<< HEAD
 { 
     extern uint8_t ledLogState;
     bool logging = digitalRead(ledLogState);
@@ -232,6 +258,193 @@ void heatOil(void)
         }else{
             digitalWrite(SSR, LOW);
         } 
+=======
+{
+    Time t;    
+    extern uint8_t ledLogState;
+    bool logging = digitalRead(ledLogState);
+
+    //double OilTemperature = readOilTemp();
+    static double OilTemperature = 50;//readOilTemp();
+
+    static bool aquecido = false;
+    static bool aquecer = true;
+    static bool resfriado = false;
+    static bool resfriar = false;
+    static bool highTemp = false;
+    static bool lowTemp = false;
+    static uint32_t maxHighTempTime = 999999;
+    static uint32_t minLowTempTime = 999999;
+    static uint32_t maxLowTempTime = 999999;
+
+    if(logging)
+    {
+        if(TempFixed)
+        {
+            if(OilTemperature < 85)
+            {
+                digitalWrite(SSR, HIGH);
+            }else{
+                digitalWrite(SSR, LOW);
+            }
+        }else{
+
+            Serial.print("Oil temp: ");
+            Serial.print(OilTemperature);                       
+            Serial.print("   TemperatureTarget: ");
+            Serial.print(tl.temperature);
+            Serial.print("   minLowTempTime: ");
+            Serial.print(minLowTempTime);
+            Serial.print("   maxLowTempTime: ");
+            Serial.print(maxLowTempTime);            
+            Serial.print("   actualTempTime: ");
+            Serial.print(actualTempTime);
+            Serial.print("   maxHighTempTime: ");
+            Serial.println(maxHighTempTime);
+
+            if(OilTemperature <= tl.temperature && !aquecido)
+            {
+                aquecer = true;
+                resfriar = false;
+            }
+
+            if(OilTemperature > tl.temperature && !resfriado)
+            {
+                resfriar = true;
+                aquecer = false;
+            }
+            
+            if(OilTemperature >= tl.temperature && actualTempTime >= maxHighTempTime && aquecer)
+            {                
+                aquecido = true;
+                aquecer = false;
+                resfriado = false;
+                resfriar = true;
+                Serial.println("Aquecido desligando SSR");
+                digitalWrite(SSR, LOW); //desliga a resistencia do oleo
+                
+                Serial.println("Aquecido ler novo dado...");
+                getNewTempCondiction(&tl);
+                
+                t = rtc.getTime();
+                actualTempTime = (t.date * 24 * 3600) + (t.hour * 360) + (t.min * 60) + t.sec;
+                minLowTempTime = actualTempTime + tl.minTime;
+
+                uint32_t maxHighTempTime = 999999;
+                uint32_t minLowTempTime = 999999;
+                uint32_t maxLowTempTime = 999999;
+
+                Serial.println("\n\n\n");
+                Serial.print("Oil temp: ");
+                Serial.print(OilTemperature);                       
+                Serial.print("   TemperatureTarget: ");
+                Serial.print(tl.temperature);
+                Serial.print("   minLowTempTime: ");
+                Serial.print(minLowTempTime);
+                Serial.print("   maxLowTempTime: ");
+                Serial.print(maxLowTempTime);            
+                Serial.print("   actualTempTime: ");
+                Serial.print(actualTempTime);
+                Serial.print("   maxHighTempTime: ");
+                Serial.println(maxHighTempTime);   
+                Serial.println("\n\n\n");
+                delay(3000);             
+                
+            }
+
+            Serial.println((((OilTemperature <= tl.temperature && actualTempTime >= minLowTempTime) || actualTempTime >= maxLowTempTime) && resfriar)?"\nif true\n" : "\nif false\n");
+            if(((OilTemperature <= tl.temperature && actualTempTime >= minLowTempTime) || actualTempTime >= maxLowTempTime) && resfriar) 
+            {
+                aquecido = false;
+                aquecer = true;
+                resfriado = true;
+                resfriar = false;
+                Serial.println("Resfriado, religando SSR");
+                digitalWrite(SSR, HIGH); //liga a resistencia do oleo
+                
+                Serial.println("Resfriado ler novo dado...");
+                getNewTempCondiction(&tl);
+                t = rtc.getTime();
+                actualTempTime = (t.date * 24 * 3600) + (t.hour * 360) + (t.min * 60) + t.sec;
+                maxHighTempTime = actualTempTime + tl.minTime;
+
+                uint32_t maxHighTempTime = 999999;
+                uint32_t minLowTempTime = 999999;
+                uint32_t maxLowTempTime = 999999;                
+
+                Serial.println("\n\n\n");
+                Serial.print("Oil temp: ");
+                Serial.print(OilTemperature);                       
+                Serial.print("   TemperatureTarget: ");
+                Serial.print(tl.temperature);
+                Serial.print("   minLowTempTime: ");
+                Serial.print(minLowTempTime);
+                Serial.print("   maxLowTempTime: ");
+                Serial.print(maxLowTempTime);            
+                Serial.print("   actualTempTime: ");
+                Serial.print(actualTempTime);
+                Serial.print("   maxHighTempTime: ");
+                Serial.println(maxHighTempTime);   
+                Serial.println("\n\n\n");
+                delay(3000);
+            }
+            
+            if(!aquecido && aquecer)
+            {
+                if(OilTemperature >= tl.temperature)
+                {
+                    Serial.println("Temperatura do oleo alcançada:");
+                    Serial.println(OilTemperature);
+                    Serial.println("estabilizando...");
+                    aquecer = false;   
+                                  
+                    if(!highTemp)
+                    {                
+                        t = rtc.getTime();
+                        actualTempTime = (t.date * 24 * 3600) + (t.hour * 360) + (t.min * 60) + t.sec;                                    
+                        maxHighTempTime = actualTempTime + tl.maxTime;
+    
+                        Serial.print("\nmaxTempTimeCorrigido: ");
+                        Serial.println(maxHighTempTime);
+                    }
+                    highTemp = true; 
+                    lowTemp = false; 
+                }else{
+                    OilTemperature += 25;
+                    Serial.println("aquecendo o oleo...");                
+                    digitalWrite(SSR, HIGH); //aquece o oleo
+                }         
+            }
+                       
+            if(!resfriado && resfriar)
+            {                                 
+                if(OilTemperature <= tl.temperature ||  actualTempTime > minLowTempTime)
+                {
+                    Serial.println("Temperatura do oleo alcançada:");
+                    Serial.println(OilTemperature);
+                    Serial.println("estabilizando...");                 
+                    resfriar = false;
+
+                    if(!lowTemp)
+                    {                
+                        t = rtc.getTime();
+                        actualTempTime = (t.date * 24 * 3600) + (t.hour * 360) + (t.min * 60) + t.sec;
+                        maxLowTempTime = actualTempTime + tl.maxTime;                    
+                        Serial.print("\nmaxLowTempTimeCorrigido: ");
+                        Serial.println(maxLowTempTime);
+                    }
+                    highTemp = false; 
+                    lowTemp = true;
+                }else{
+                    OilTemperature -= 10;
+                    Serial.println("resfriando o oleo...");                
+                    digitalWrite(SSR, LOW); //aquece o oleo
+                }                             
+            }          
+        } 
+        t = rtc.getTime();
+        actualTempTime = (t.date * 24 * 3600) + (t.hour * 360) + (t.min * 60) + t.sec;    
+>>>>>>> d8899fa... Iniicio do  Cliclico bugadaco
     }
 }
 
@@ -241,6 +454,7 @@ void treatstTimer1interruption()
      
     heatOil();
     
+<<<<<<< HEAD
     SensorsLogSerial(numberOfSensors, sensorCSPINs);
     
     if(logging)
@@ -266,6 +480,33 @@ void treatstTimer1interruption()
     interrupts();
 }
 
+=======
+//    SensorsLogSerial(numberOfSensors, sensorCSPINs);
+    
+//    if(logging)
+//    {
+//        Time t;
+//        t = rtc.getTime();
+//        actualTime = t.min;
+//
+//        if(actualTime == nextLoggingTime)
+//        {
+//            lcd.print("Salvando...");
+//            updateLoggingTime();
+//            lcd.clear();
+//            copy(rtc.getDateStr(FORMAT_SHORT, FORMAT_LITTLEENDIAN, '/'), strDate, 11);
+//            copy(rtc.getTimeStr(FORMAT_LONG), strTime, 9);
+//
+//            if(sdcardOK)
+//            {
+//                SensorsLogSDCard(numberOfSensors);
+//            }
+//        }
+//    }
+    interrupts();
+}
+
+>>>>>>> d8899fa... Iniicio do  Cliclico bugadaco
 void setup()
 {  
      Serial.begin(115200);
@@ -279,14 +520,22 @@ void setup()
         Serial.print(":");
         Serial.println(digitalRead(sensorCSPINs[i]));
     }
+<<<<<<< HEAD
     delay(500);
+=======
+    delay(100);
+>>>>>>> d8899fa... Iniicio do  Cliclico bugadaco
     
     lcd.begin(40, 2);
     lcd.clear();
     lcd.print("Initialize the SD");
     
     SPI.begin();    
+<<<<<<< HEAD
     delay(500);
+=======
+    delay(300);
+>>>>>>> d8899fa... Iniicio do  Cliclico bugadaco
     //Initialize the SD.
     if(!sd.begin(SD_CONFIG)) {
         sd.initErrorHalt(&Serial);
@@ -322,6 +571,11 @@ void loop()
 {
     checkButtons();
     updateLcd();
+<<<<<<< HEAD
        
+=======
+   
+    
+>>>>>>> d8899fa... Iniicio do  Cliclico bugadaco
     //readAmbientTemp(); TODO
 }

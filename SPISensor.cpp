@@ -30,6 +30,10 @@ SPISensor::read16(uint8_t pin){
     delayMicroseconds(100);
     uint16_t data = SPI.transfer16(0xFFFF);
     digitalWrite(pin, HIGH);
+<<<<<<< HEAD
     delay(10);
+=======
+    
+>>>>>>> d8899fa... Iniicio do  Cliclico bugadaco
     return data;
 }
