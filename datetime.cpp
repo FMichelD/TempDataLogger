@@ -166,11 +166,10 @@ void dayOfWeekUp() {
 
 void dayOfWeekDown() {
     //Sunday = 0; Monday = 1; ... ; Saturday = 6;
-    if (dayOfWeek > Sunday)
+    if (dayOfWeek > Sunday) 
         dayOfWeek--;
     else
         dayOfWeek = Saturday;
 
     setDayOfWeekText();
 }
-

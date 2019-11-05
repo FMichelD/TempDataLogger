@@ -106,10 +106,8 @@ void copy(char* src, char* dst, int len) {
     dst[len+1] = '\0';
 }
 
-void SensorsLogSDCard(uint8_t numberOfSensors){
-  
-    noInterrupts();    
-    
+void SensorsLogSDCard(uint8_t numberOfSensors)
+{    
     char fileName[17];
 
     SDCardFileName.toCharArray(fileName, 17);
@@ -147,12 +145,10 @@ void SensorsLogSDCard(uint8_t numberOfSensors){
 
     delay(500);
     Serial.println(digitalRead(SS));
-    interrupts();
 }
 
 void SensorsLogSerial(uint8_t numberOfSensors, uint8_t* sensorCSPINs)
 {
-    noInterrupts();
     
     for(int8_t i = 0; i < numberOfSensors; i++) {
 
@@ -182,8 +178,6 @@ void SensorsLogSerial(uint8_t numberOfSensors, uint8_t* sensorCSPINs)
         delay(250);
     }
     Serial.println();
-
-    interrupts();
 }
 
 void updateLoggingTime(){
@@ -193,7 +187,6 @@ void updateLoggingTime(){
 
 void updateLcd()
 {
-    noInterrupts();
     unsigned long period = 1000; // every 1000ms updates lcd.
     
     static unsigned long lastMillisLCD = 0;
@@ -204,7 +197,6 @@ void updateLcd()
         copy(rtc.getTimeStr(FORMAT_LONG), strTime, 9);
         systemMenu.update();
     }
-    interrupts();
 }
 
 double readOilTemp(void)
@@ -239,7 +231,7 @@ double readOilTemp(void)
 //}
 
 void heatOil(void)
-{
+{  
     Time t;    
     extern uint8_t ledLogState;
     bool logging = digitalRead(ledLogState);
@@ -285,16 +277,13 @@ void heatOil(void)
                 if(OilTemperature < tl.temperature)
                 {
                     digitalWrite(SSR, HIGH); //liga a resistencia do oleo
-                    Serial.println("Desliga Ventoinha");
+                    Serial.println("Aquencendo Ventoinha desligada");
                     digitalWrite(RelePin, HIGH);//Desliga ventoinha
                     //OilTemperature += 15;
                 }
-
-//                Serial.print("Oil temp: ");
-//                Serial.print(OilTemperature);                  
+                                
                 if(OilTemperature >= tl.temperature)
                 {
-//                    Serial.println("  Temperatura desejada atingida");
                     digitalWrite(SSR, LOW); //desliga a resistencia do oleo
                     //OilTemperature -= 10;
 
@@ -324,7 +313,7 @@ void heatOil(void)
                 if(OilTemperature >= tl.temperature)
                 {
                     digitalWrite(SSR, LOW); //desliga a resistencia do oleo
-                    Serial.println("Liga Ventoinha");
+                    Serial.println("Resfriando Ventoinha ligada");
                     digitalWrite(RelePin, LOW);//Liga ventoinha
                     //OilTemperature -= 10;
                 }
@@ -351,7 +340,13 @@ void heatOil(void)
 
                 if(actualTempTime > minLowTempTime)
                 {
-                    lowTemp = true;  
+                    actualTempTime = getAcumulatedSecs();                                    
+                    maxLowTempTime = actualTempTime + tl.maxTime;
+
+                    Serial.print("\nmaxLowTempTimeCorrigido: ");
+                    Serial.println(maxLowTempTime);                    
+                    lowTemp = true;
+                    highTemp = false; 
                 }
             }
             
