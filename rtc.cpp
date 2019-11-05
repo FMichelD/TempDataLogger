@@ -16,3 +16,29 @@ void initRTC(){
   rtc.setSQWRate(SQW_RATE_1);
   rtc.enableSQW(true);
 }
+
+uint32_t getAcumulatedSecs(void)
+{
+    Time t;
+    t = rtc.getTime();
+
+    uint32_t days = uint32_t(t.date) * 24L * 3600L;    
+    uint32_t hours = uint32_t(t.hour) * 3600L;
+    uint16_t mins = (t.min * 60);
+    uint8_t secs = (t.sec);
+    uint32_t acms = days + hours + mins + secs;
+    
+//    Serial.print("\nDia: ");
+//    Serial.print(days);
+//    Serial.print("   hora: ");
+//    Serial.print(hours);
+//    Serial.print("   min: ");
+//    Serial.print(mins);
+//    Serial.print("   sec: ");
+//    Serial.println(secs);
+//    
+//    Serial.print("Acum Secs: ");
+//    Serial.println(acms); 
+
+    return acms;
+}

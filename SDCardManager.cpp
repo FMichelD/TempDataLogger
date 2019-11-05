@@ -32,43 +32,33 @@ bool parseLine(char* str, TemperatureLimits *tl)
     str = strtok(str, ";");
     if (!str) 
         return false;
+    tl->heater = atoi(str);
 
-    // Print text field.
-    tl->temperature = atoi(str);
-    //Serial.println(str);
 
     // Subsequent calls to strtok expects a null pointer.
     str = strtok(nullptr, ";");
     if (!str) 
         return false;
+    tl->temperature = atoi(str);
 
-    // Convert string to long integer.
-    int32_t i32 = strtol(str, &ptr, 0);
-    if (str == ptr || *skipSpace(ptr)) 
-        return false;
-    //Serial.println(i32);
-    tl->minTime = atoi(str);
 
     str = strtok(nullptr, ";");
     if (!str) 
         return false;
+    tl->minTime = atoi(str);
 
-    // strtoul accepts a leading minus with unexpected results.
-    if (*skipSpace(str) == '-') 
+    
+    str = strtok(nullptr, ";");
+    if (!str) 
         return false;
-
-    // Convert string to unsigned long integer.
-    uint32_t u32 = strtoul(str, &ptr, 0);
-    if (str == ptr || *skipSpace(ptr))
-        return false;
-    //Serial.println(u32);
     tl->maxTime = atoi(str);
+
 
     // Check for extra fields  
     return strtok(nullptr, ";") == nullptr;
 }
 
-void getNewTempCondiction(TemperatureLimits *tl)
+int getNewTempCondiction(TemperatureLimits *tl)
 {
     // Create the file.
     file.close();
@@ -103,17 +93,19 @@ void getNewTempCondiction(TemperatureLimits *tl)
                 error("parseLine failed");
             }
             Serial.println("Dados do arquivo de temperatura");
+            Serial.println(tl->heater ? "aquecer" : "resfriar");
             Serial.println(tl->temperature);
             Serial.println(tl->minTime);
             Serial.println(tl->maxTime);
             Serial.println();
             
             currentCicleLine++;
-            break;
+            return 1;
         }
         countLine++;
     }
         
     file.close();
-    Serial.println(F("Done"));    
+    Serial.println(F("Done")); 
+    return 0;   
 }

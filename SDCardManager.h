@@ -50,6 +50,7 @@ const uint8_t SD_CS_PIN = A8;
 extern char line[20];
 extern uint8_t sdcardOK;
 extern TemperatureLimits tl;
+extern bool heater;
 
 //------------------------------------------------------------------------------
 // Store error strings in flash to save RAM.
@@ -58,6 +59,6 @@ extern TemperatureLimits tl;
 void initSDCard(void);
 char* skipSpace(char* str);
 bool parseLine(char* str, TemperatureLimits *tl);
-void getNewTempCondiction(TemperatureLimits *tl);
+int getNewTempCondiction(TemperatureLimits *tl);
 
 #endif //SDCARD_MANAGER_H

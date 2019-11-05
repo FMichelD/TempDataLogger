@@ -9,5 +9,6 @@
 extern DS1307 rtc;
 
 void initRTC();
+uint32_t getAcumulatedSecs(void);
 
 #endif //RTC_H

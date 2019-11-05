@@ -293,7 +293,7 @@ void initTempCicle()
        
     Time t;
     t = rtc.getTime();
-    actualTempTime = (t.date * 24 * 3600) + (t.hour * 360) + (t.min * 60) + t.sec;
+    actualTempTime = getAcumulatedSecs();
     currentTempTime = actualTempTime;
     minTempTime = (actualTempTime + tl.minTime);
     maxTempTime = (actualTempTime + tl.maxTime);
