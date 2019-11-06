@@ -17,9 +17,6 @@
 
 
 const int8_t numberOfSensors = 18;
-
-//uint8_t sensorCSPINs[numberOfSensors]{40};
-                                      
 uint8_t sensorCSPINs[numberOfSensors]{ 40, 41, 42, 43, 44,
                                        45, 46, 47, 48, 49,
                                        39, 38, 37, 36, 35, 
@@ -35,8 +32,8 @@ extern uint8_t nextLoggingTime;
 
 TemperatureLimits tl;
 uint32_t actualTempTime;
-uint32_t minTempTime; 
-uint32_t maxTempTime;
+//uint32_t minTempTime; 
+//uint32_t maxTempTime;
 
 extern HardwareSerial Serial;
 extern DS1307 rtc;
@@ -73,7 +70,7 @@ const byte ledPin = LED_BUILTIN;
 bool ledState = LOW;
 char* ledState_text;
 const byte SSR = 11;
-const byte RelePin = 8;
+const byte CoolerPin = 8;
 
 // Variable 'analogValue' is later configured to be printed on the display.
 // This time a static variable is used for holding the previous analog value.
@@ -187,56 +184,23 @@ void updateLoggingTime(){
 
 void updateLcd()
 {
-    unsigned long period = 1000; // every 1000ms updates lcd.
-    
-    static unsigned long lastMillisLCD = 0;
-    if(millis() - lastMillisLCD >= period) {
-        lastMillisLCD = millis();
-
-        copy(rtc.getDateStr(FORMAT_SHORT, FORMAT_LITTLEENDIAN, '/'), strDate, 11);
-        copy(rtc.getTimeStr(FORMAT_LONG), strTime, 9);
-        systemMenu.update();
-    }
+    copy(rtc.getDateStr(FORMAT_SHORT, FORMAT_LITTLEENDIAN, '/'), strDate, 11);
+    copy(rtc.getTimeStr(FORMAT_LONG), strTime, 9);
+    systemMenu.update();
 }
 
-double readOilTemp(void)
+float readOilTemp(void)
 {
     //read temperature of sensor on cs pin 34
     return thermoparK.readCelcius(34);
 }
 
-//uint32_t getAcumulatedSecs(Time t)
-//{
-//    t = rtc.getTime();
-//
-//    uint32_t days = uint32_t(t.date) * 24L * 3600L;    
-//    uint32_t hours = uint32_t(t.hour) * 3600L;
-//    uint16_t mins = (t.min * 60);
-//    uint8_t secs = (t.sec);
-//    uint32_t acms = days + hours + mins + secs;
-//    
-//    Serial.print("\nDia: ");
-//    Serial.print(days);
-//    Serial.print("   hora: ");
-//    Serial.print(hours);
-//    Serial.print("   min: ");
-//    Serial.print(mins);
-//    Serial.print("   sec: ");
-//    Serial.println(secs);
-//    
-//    Serial.print("Acum Secs: ");
-//    Serial.println(acms); 
-//
-//    return acms;
-//}
-
 void heatOil(void)
-{  
-    Time t;    
+{   
     extern uint8_t ledLogState;
     bool logging = digitalRead(ledLogState);
 
-    double OilTemperature = readOilTemp();
+    float OilTemperature = readOilTemp();
     //static double OilTemperature = 50;//readOilTemp();
 
     bool heater;
@@ -253,10 +217,10 @@ void heatOil(void)
             if(OilTemperature < 85)
             {
                 digitalWrite(SSR, HIGH);//Liga Resistencia do oleo
-                digitalWrite(RelePin, HIGH);//Desliga ventoinha
+                digitalWrite(CoolerPin, HIGH);//Desliga ventoinha
             }else{
                 digitalWrite(SSR, LOW); //Desliga Resistencia oleo
-                digitalWrite(RelePin, LOW);//liga ventinhas
+                digitalWrite(CoolerPin, LOW);//liga ventinhas
             }
         }else{            
             Serial.print("Oil temp: ");
@@ -266,11 +230,16 @@ void heatOil(void)
             
             if(tl.heater)
             {
-                Serial.print("   maxHighTempTime: ");
-                Serial.println(maxHighTempTime - actualTempTime);
+                if(maxHighTempTime != ULONG_MAX)
+                {
+                    Serial.print("   maxHighTempTime: ");
+                    Serial.println(maxHighTempTime - actualTempTime);
+                }else{
+                  Serial.println();
+                }
                 
-                Serial.println("Aquencendo Ventoinha desligada");
-                digitalWrite(RelePin, HIGH);//Desliga ventoinha
+                Serial.println("Aquencendo Ventoinha desligada\n");
+                digitalWrite(CoolerPin, HIGH);//Desliga ventoinha
             
                 if(OilTemperature < tl.temperature)
                 {
@@ -282,8 +251,7 @@ void heatOil(void)
                 if(OilTemperature >= tl.temperature)
                 {
                     digitalWrite(SSR, LOW); //desliga a resistencia do oleo
-                    //OilTemperature -= 10;
-
+                    
                     if(!highTemp)
                     {                     
                         actualTempTime = getAcumulatedSecs();                                    
@@ -310,11 +278,10 @@ void heatOil(void)
                 if(OilTemperature >= tl.temperature)
                 {   
                     digitalWrite(SSR, LOW); //desliga a resistencia do oleo
-
-                    //OilTemperature -= 10;
                 }
                                          
-                if(OilTemperature < tl.temperature || actualTempTime > minLowTempTime)
+//                if(OilTemperature < tl.temperature || actualTempTime > minLowTempTime)
+                if(actualTempTime > minLowTempTime)
                 {                   
                     //digitalWrite(SSR, HIGH); //liga a resistencia do oleo
 
@@ -326,19 +293,28 @@ void heatOil(void)
                         Serial.print("\nmaxLowTempTimeCorrigido: ");
                         Serial.println(maxLowTempTime - actualTempTime);
                     }else{
-                        Serial.print("   maxLowTempTime: ");
-                        Serial.println(maxLowTempTime - actualTempTime);
-                    }
-                    
+                        if(maxLowTempTime != ULONG_MAX)
+                        {
+                            Serial.print("   maxLowTempTime: ");
+                            Serial.println(maxLowTempTime - actualTempTime);
+                        }else{
+                            Serial.println();
+                        }
+                    }                    
                     highTemp = false; 
                     lowTemp = true; 
                 }else{
-                    Serial.print("   minLowTempTime: ");
-                    Serial.println(minLowTempTime - actualTempTime);
+                    if(minLowTempTime != ULONG_MAX)
+                    {
+                        Serial.print("   minLowTempTime: ");
+                        Serial.println(minLowTempTime - actualTempTime);
+                    }else{
+                        Serial.println();
+                    }
                 }
                 
                 Serial.println("Resfriando Ventoinha ligada");
-                digitalWrite(RelePin, LOW);//Liga ventoinha                
+                digitalWrite(CoolerPin, LOW);//Liga ventoinha                
             }
            
             if(lowTemp && actualTempTime >= maxLowTempTime)
@@ -358,15 +334,18 @@ void heatOil(void)
 void treatstTimer1interruption()
 {   
     noInterrupts();  
-   
     static uint8_t count = 0;
+    
+    updateLcd();
     heatOil();
 
-    if(count % 5 == 0)
+    #define LOG_TIME 3
+    // A cada LOG_TIME interrupções (LOG_TIME s) envia os dados dos
+    // sensores para porta serial.
+    if(count % LOG_TIME == 0)
     {
         SensorsLogSerial(numberOfSensors, sensorCSPINs);
     }
-
     count++;
     if(count > 250)
     {
@@ -375,7 +354,6 @@ void treatstTimer1interruption()
     
     if(logging)
     {
-        Time t;
         t = rtc.getTime();
         actualTime = t.min;
 
@@ -410,52 +388,49 @@ void setup()
         Serial.println(digitalRead(sensorCSPINs[i]));
     }
 
-    pinMode(RelePin, OUTPUT);
-    digitalWrite(RelePin, HIGH);
-    delay(500);
+    //Configura a saida para a ventoinha.
+    pinMode(CoolerPin, OUTPUT);
+    digitalWrite(CoolerPin, HIGH);
 
-    
+    //Configura a saida para o Rele de Estado Sólido.
+    pinMode(SSR, OUTPUT);
+    digitalWrite(SSR, LOW);
+    delay(100);
+
+    //Configura o display.
     lcd.begin(40, 2);
     lcd.clear();
     lcd.print("Initialize the SD");
     
-    SPI.begin();    
-
-    delay(500);
+    SPI.begin();
+    delay(100);
 
     //Initialize the SD.
     if(!sd.begin(SD_CONFIG)) {
         sd.initErrorHalt(&Serial);
         sdcardOK = false;
-        lcd.print("Falha no SD");
-        delay(200);
     }else {
         sdcardOK = true;        
     }
-    delay(200);
-
-
+    delay(100);
     Serial.println(digitalRead(SS));
-                                
-    pinMode(SSR, OUTPUT);
-    digitalWrite(SSR, LOW);
-  
+                                 
     initRTC();
     initMenu();
     
     lcd.clear();
     lcd.print("Unioeste-CSC");
         
-    Timer1.initialize(2000000); // Inicializa o Timer1 e configura para um período de 5.0 segundos
+    Timer1.initialize(1000000); // Inicializa o Timer1 e configura para um período de 1.0 segundos
     Timer1.attachInterrupt(treatstTimer1interruption);
 
     //getNewTempCondiction(&tl);
-    delay(1000);
+    delay(500);
     interrupts();
 }
 
 void loop()
 {
     checkButtons();
-    updateLcd();
+    
 }

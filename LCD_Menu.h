@@ -25,7 +25,6 @@ uint8_t actualTime;
 uint8_t nextLoggingTime;
 
 extern HardwareSerial Serial;
-extern Time time;
 extern DS1307 rtc;
 
 extern char* strTime;
@@ -65,14 +64,11 @@ extern char * dayOfWeekText;
 extern uint8_t hour;
 extern uint8_t minute;
 
-extern char* strDate;
-extern char* strTime;
-
 extern TemperatureLimits tl;
-extern uint32_t actualTempTime;
-static uint32_t currentTempTime; 
-extern uint32_t minTempTime;
-extern uint32_t maxTempTime;
+//extern uint32_t actualTempTime;
+//static uint32_t currentTempTime; 
+//extern uint32_t minTempTime;
+//extern uint32_t maxTempTime;
 
 enum keys {
     keyUp = 1,
@@ -291,12 +287,12 @@ void initTempCicle()
 {  
     getNewTempCondiction(&tl);
        
-    Time t;
-    t = rtc.getTime();
-    actualTempTime = getAcumulatedSecs();
-    currentTempTime = actualTempTime;
-    minTempTime = (actualTempTime + tl.minTime);
-    maxTempTime = (actualTempTime + tl.maxTime);
+//    Time t;
+//    t = rtc.getTime();
+//    actualTempTime = getAcumulatedSecs();
+//    currentTempTime = actualTempTime;
+//    minTempTime = (actualTempTime + tl.minTime);
+//    maxTempTime = (actualTempTime + tl.maxTime);
 
     Serial.println("Inicializado Temperatura Ciclica");
 }

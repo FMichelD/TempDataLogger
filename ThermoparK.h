@@ -8,7 +8,7 @@ class ThermoparK : public SPISensor
 public:
     ThermoparK();
 
-    double readCelcius(uint8_t pin);
+    float readCelcius(uint8_t pin);
 };
 
 #endif // THERMOPARK_H

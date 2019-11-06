@@ -5,7 +5,7 @@ ThermoparK::ThermoparK()
 
 }
 
-double ThermoparK::readCelcius(uint8_t pin){
+float ThermoparK::readCelcius(uint8_t pin){
     uint16_t rawTemp = read16(pin);
 
     //Check if sensor is not connected
@@ -18,5 +18,5 @@ double ThermoparK::readCelcius(uint8_t pin){
     rawTemp >>= 3;
 
     // Convert raw temperature to Celcius
-    return  rawTemp *= 0.25;
+    return  rawTemp *= 0.25F;
 }

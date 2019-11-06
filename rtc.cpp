@@ -1,6 +1,7 @@
 #include "rtc.h"
 
 DS1307 rtc(20, 21);
+Time t;
 
 void initRTC(){
   //Aciona o relogio
@@ -19,7 +20,6 @@ void initRTC(){
 
 uint32_t getAcumulatedSecs(void)
 {
-    Time t;
     t = rtc.getTime();
 
     uint32_t days = uint32_t(t.date) * 24L * 3600L;    
