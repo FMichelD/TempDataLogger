@@ -263,22 +263,19 @@ void heatOil(void)
             Serial.print(OilTemperature);                       
             Serial.print("   TemperatureTarget: ");
             Serial.print(tl.temperature);
-            Serial.print("   minLowTempTime: ");
-            Serial.print(minLowTempTime);
-            Serial.print("   maxLowTempTime: ");
-            Serial.print(maxLowTempTime);            
-            Serial.print("   actualTempTime: ");
-            Serial.print(actualTempTime);
-            Serial.print("   maxHighTempTime: ");
-            Serial.println(maxHighTempTime);
-
+            
             if(tl.heater)
             {
+                Serial.print("   maxHighTempTime: ");
+                Serial.println(maxHighTempTime - actualTempTime);
+                
+                Serial.println("Aquencendo Ventoinha desligada");
+                digitalWrite(RelePin, HIGH);//Desliga ventoinha
+            
                 if(OilTemperature < tl.temperature)
                 {
                     digitalWrite(SSR, HIGH); //liga a resistencia do oleo
-                    Serial.println("Aquencendo Ventoinha desligada");
-                    digitalWrite(RelePin, HIGH);//Desliga ventoinha
+                    
                     //OilTemperature += 15;
                 }
                                 
@@ -309,22 +306,17 @@ void heatOil(void)
             }
             
             if(!tl.heater)
-            {
+            {                                                
                 if(OilTemperature >= tl.temperature)
-                {
+                {   
                     digitalWrite(SSR, LOW); //desliga a resistencia do oleo
-                    Serial.println("Resfriando Ventoinha ligada");
-                    digitalWrite(RelePin, LOW);//Liga ventoinha
+
                     //OilTemperature -= 10;
                 }
-               
-//                Serial.print("Oil temp: ");
-//                Serial.print(OilTemperature);                            
-                if(OilTemperature < tl.temperature)
-                {
-//                    Serial.println("  Temperatura desejada atingida"); 
-                    digitalWrite(SSR, HIGH); //liga a resistencia do oleo
-                    //OilTemperature += 15;
+                                         
+                if(OilTemperature < tl.temperature || actualTempTime > minLowTempTime)
+                {                   
+                    //digitalWrite(SSR, HIGH); //liga a resistencia do oleo
 
                     if(!lowTemp)
                     {   
@@ -332,24 +324,23 @@ void heatOil(void)
                         maxLowTempTime = actualTempTime + tl.maxTime;
     
                         Serial.print("\nmaxLowTempTimeCorrigido: ");
-                        Serial.println(maxLowTempTime);
+                        Serial.println(maxLowTempTime - actualTempTime);
+                    }else{
+                        Serial.print("   maxLowTempTime: ");
+                        Serial.println(maxLowTempTime - actualTempTime);
                     }
+                    
                     highTemp = false; 
                     lowTemp = true; 
+                }else{
+                    Serial.print("   minLowTempTime: ");
+                    Serial.println(minLowTempTime - actualTempTime);
                 }
-
-                if(actualTempTime > minLowTempTime)
-                {
-                    actualTempTime = getAcumulatedSecs();                                    
-                    maxLowTempTime = actualTempTime + tl.maxTime;
-
-                    Serial.print("\nmaxLowTempTimeCorrigido: ");
-                    Serial.println(maxLowTempTime);                    
-                    lowTemp = true;
-                    highTemp = false; 
-                }
+                
+                Serial.println("Resfriando Ventoinha ligada");
+                digitalWrite(RelePin, LOW);//Liga ventoinha                
             }
-            
+           
             if(lowTemp && actualTempTime >= maxLowTempTime)
             {
                 if(!getNewTempCondiction(&tl))

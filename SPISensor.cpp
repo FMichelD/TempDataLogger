@@ -20,18 +20,18 @@ SPISensor::read16(uint8_t pin){
     
     //discard acutal conversion
     digitalWrite(pin, LOW);
-    delay(10);
+    delay(30);
 
     //initalize new convervion
     digitalWrite(pin, HIGH);
-    delay(250); //wait for conversion time: from datashee 0.17s - 0.22s (max)
+    delay(300); //wait for conversion time: from datashee 0.17s - 0.22s (max)
     
     //read actual temperature.
     digitalWrite(pin, LOW);
     delayMicroseconds(100);
     uint16_t data = SPI.transfer16(0xFFFF);
     digitalWrite(pin, HIGH);
-    delay(30);
+    delay(50);
 
     return data;
 }
