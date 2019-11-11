@@ -47,7 +47,7 @@ const uint8_t SD_CS_PIN = A8;
 #error SD_FAT_TYPE
 #endif  // SD_FAT_TYPE
 
-extern char line[20];
+extern char line[15];
 extern uint8_t sdcardOK;
 extern TemperatureLimits tl;
 extern bool heater;

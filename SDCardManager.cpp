@@ -1,7 +1,7 @@
 #include "SDCardmanager.h"
 
 uint8_t sdcardOK = false;
-char line[20];
+char line[15];
 
 void initSDCard(void)
 {
@@ -61,45 +61,52 @@ bool parseLine(char* str, TemperatureLimits *tl)
 int getNewTempCondiction(TemperatureLimits *tl)
 {
     // Create the file.
-    file.close();
     if (sd.exists("TempCicle.csv"))
     {
-        Serial.println("Lendo arquivo");
+        Serial.println("Lendo arquivo: TempCicle.csv");
         if (!file.open("TempCicle.csv", FILE_READ)) 
         {
-            error("open failed");
+            Serial.println("open file failed");
+            return 0;
         }
     }else{
         Serial.println("O arquivo não existe!");
+        return 0;
     }
     
-    file.rewind();
+    //file.rewind();
     
     static int currentCicleLine = 0;
     int countLine = 0;    
     while (file.available()) {    
         int n = file.fgets(line, sizeof(line));
         if (n <= 0) {
-            error("fgets failed"); 
+            Serial.println("fgets failed");
+            return 0; 
         }
         if (line[n-1] != '\n' && n == (sizeof(line) - 1))
         {
-            error("line too long");
+            Serial.println("line too long");
+            return 0;
         }
         if (currentCicleLine == countLine)
         {                       
             if (!parseLine(line, tl))
             {
-                error("parseLine failed");
+                Serial.println("parseLine failed");
+                return 0;
             }
             Serial.println("Dados do arquivo de temperatura");
             Serial.println(tl->heater ? "aquecer" : "resfriar");
             Serial.println(tl->temperature);
             Serial.println(tl->minTime);
             Serial.println(tl->maxTime);
-            Serial.println();
             
             currentCicleLine++;
+            
+            file.close();
+            
+            Serial.println(F("Done"));
             return 1;
         }
         countLine++;

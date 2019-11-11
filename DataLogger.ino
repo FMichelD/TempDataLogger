@@ -15,6 +15,8 @@
 #include <TimerOne.h>
 #include <avr/wdt.h>
 
+//#define DEBUG
+#undef DEBUG
 
 uint8_t numUnusedPins = 42;
 const int unusedPins[] = { 40, 41, 42, 43, 44,
@@ -46,6 +48,7 @@ double temperature[numberOfSensors];
 #define OIL_TEMP_01 temperature[0]
 #define OIL_TEMP_02 temperature[1]
 
+
 //Extern declared variables
 extern uint8_t logging;
 extern uint8_t loggingInterval;
@@ -54,8 +57,6 @@ extern uint8_t nextLoggingTime;
 
 TemperatureLimits tl;
 uint32_t actualTempTime;
-//uint32_t minTempTime; 
-//uint32_t maxTempTime;
 
 extern HardwareSerial Serial;
 extern DS1307 rtc;
@@ -86,40 +87,13 @@ extern LiquidSystem systemMenu;
 const byte pwmPin = 13;
 byte pwmLevel = 0;
 
-// Variables for controlling a pin and displaying the state with text.
-// char* is used for adding changing text to the LiquidLine object.
 const byte ledPin = LED_BUILTIN;
 bool ledState = LOW;
-char* ledState_text;
 const byte SSR = 11;
 const byte CoolerPin01 = 8;
 const byte CoolerPin02 = 9;
 bool NormalOperation = true;
-
-
-// Variable 'analogValue' is later configured to be printed on the display.
-// This time a static variable is used for holding the previous analog value.
-const byte analogPin = A5;
-unsigned short analogValue = 0;
-
-void pwm_up() {
-	if (pwmLevel < 225) {
-		pwmLevel += 25;
-	} else {
-		pwmLevel = 250;
-	}
-	analogWrite(pwmPin, pwmLevel);
-}
-
-// Function to be attached to the pwm_line object.
-void pwm_down() {
-	if (pwmLevel > 25) {
-		pwmLevel -= 25;
-	} else {
-		pwmLevel = 0;
-	}
-	analogWrite(pwmPin, pwmLevel);
-}
+float OilTemperature;
 
 void copy(char* src, char* dst, int len) {
     for (int i = 0; i < len; i++) {
@@ -131,6 +105,7 @@ void copy(char* src, char* dst, int len) {
 void SensorsLogSDCard(uint8_t numberOfSensors)
 {    
     char fileName[17];
+    //file.close();
 
     SDCardFileName.toCharArray(fileName, 17);
 
@@ -166,7 +141,7 @@ void SensorsLogSDCard(uint8_t numberOfSensors)
     Serial.println("Salvamento OK");
 
     delay(500);
-    Serial.println(digitalRead(SS));
+    Serial.println(digitalRead(A8));
 }
 
 void getTemperatures(void)
@@ -174,6 +149,10 @@ void getTemperatures(void)
     for(int8_t i = 0; i < numberOfSensors; i++)
     {
         temperature[i] = static_cast<double>(thermoparK.readCelcius(sensorCSPINs[i]));
+
+        #ifdef DEBUG
+            temperature[i] = 50;
+        #endif
     }
 }
 
@@ -199,13 +178,10 @@ void SensorsLogSerial()
                 Serial.print(i);
                 Serial.print(": ");
         }
-        
         Serial.println(temperature[i]);
-        digitalWrite(sensorCSPINs[i], HIGH);
-        delay(250);
     }
     Serial.println();
-    Serial.println(digitalRead(SS));
+    Serial.println(digitalRead(A8));
 }
 
 void updateLoggingTime(){
@@ -242,12 +218,10 @@ void heaterOil(void)
     digitalWrite(CoolerPin02, HIGH);//Desliga ventoinha
 }
 
-
 void heatOil(void)
 {   
     extern uint8_t ledLogState;
     bool logging = digitalRead(ledLogState);
-    float OilTemperature;
     bool heater;
     static bool highTemp = false;
     static bool lowTemp = false;
@@ -256,8 +230,10 @@ void heatOil(void)
     static uint32_t maxLowTempTime = ULONG_MAX;
 
     getTemperatures();
-    
-    OilTemperature = max(OIL_TEMP_01, OIL_TEMP_02);
+
+    #ifndef DEGUG
+        OilTemperature = max(OIL_TEMP_01, OIL_TEMP_02);
+    #endif
     
     if(oilHeaterFail())
     {
@@ -268,6 +244,10 @@ void heatOil(void)
 
         NormalOperation = false;
         Serial.print("\n\n \t\t *****Erro de leitura nos sensores de oleo*****\n\n");
+
+        #ifdef DEBUG
+            OilTemperature -= 2;
+        #endif
     }
 
     if(logging)
@@ -279,8 +259,8 @@ void heatOil(void)
                 heaterOil();
             }else{
                 digitalWrite(SSR, LOW); //Desliga Resistencia oleo
-                digitalWrite(CoolerPin01, LOW);//liga ventinhas
-                digitalWrite(CoolerPin02, LOW);//liga ventinhas
+                digitalWrite(CoolerPin01, LOW);//liga ventoinhas
+                digitalWrite(CoolerPin02, LOW);//liga ventoinhas
             }
         }else{            
             Serial.print("Oil temp: ");
@@ -290,6 +270,11 @@ void heatOil(void)
             
             if(tl.heater)
             {
+                #ifdef DEBUG
+                    OilTemperature += 5;
+                    temperature[0] = temperature[1] = OilTemperature;
+                #endif
+                
                 if(maxHighTempTime != ULONG_MAX)
                 {
                     Serial.print("   maxHighTempTime: ");
@@ -333,7 +318,12 @@ void heatOil(void)
             }
             
             if(!tl.heater)
-            {                                                
+            {             
+                #ifdef DEBUG
+                    OilTemperature -= 1;
+                    temperature[0] = temperature[1] = OilTemperature;
+                #endif                 
+                                                  
                 if(OilTemperature >= tl.temperature)
                 {   
                     digitalWrite(SSR, LOW); //desliga a resistencia do oleo
@@ -386,6 +376,14 @@ void heatOil(void)
         } 
         actualTempTime = getAcumulatedSecs();    
     }
+
+    Serial.println("Estados dos CS_Pins");
+    Serial.println(digitalRead(SS));
+    Serial.println(digitalRead(A8));
+    Serial.println(digitalRead(34));
+    Serial.println(digitalRead(33));
+    Serial.println(digitalRead(31));
+    
     wdt_reset();
 }
 
@@ -414,7 +412,7 @@ void sdCardLogging()
 
 void serialLogging(void)
 {
-     #define LOG_TIME 5
+     #define LOG_TIME 1
      static uint8_t count = 0;
      
     // A cada LOG_TIME interrupções envia os dados dos
@@ -478,8 +476,6 @@ void setup()
         Serial.println(digitalRead(sensorCSPINs[i]));
     }
 
-
-
     //Configura a saida para a ventoinha.
     pinMode(CoolerPin01, OUTPUT);
     digitalWrite(CoolerPin01, HIGH);
@@ -507,7 +503,7 @@ void setup()
         sdcardOK = true;        
     }
     delay(100);
-    Serial.println(digitalRead(SS));
+    Serial.println(digitalRead(A8));
                                  
     initRTC();
     initMenu();
@@ -515,7 +511,7 @@ void setup()
     lcd.clear();
     lcd.print("Unioeste-CSC");
         
-    Timer1.initialize(2000000); // Inicializa o Timer1 e configura para um período de 1.0 segundos
+    Timer1.initialize(1000000); // Inicializa o Timer1 e configura para um período de 1.0 segundos
     Timer1.attachInterrupt(treatstTimer1interruption);
 
     //getNewTempCondiction(&tl);
@@ -527,7 +523,14 @@ void setup()
     {
         lcd.print("Wdt Rst");
         Serial.println("\n\n***** Houve reset por estouro do watchdog *****");
+        delay(5000);
     }
+
+    #ifdef DEBUG
+        OilTemperature = 50;
+        temperature[0] = temperature[1] = OilTemperature;
+    #endif
+    
     interrupts();
 }
 

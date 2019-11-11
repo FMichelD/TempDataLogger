@@ -286,14 +286,6 @@ void initMenu() {
 void initTempCicle()
 {  
     getNewTempCondiction(&tl);
-       
-//    Time t;
-//    t = rtc.getTime();
-//    actualTempTime = getAcumulatedSecs();
-//    currentTempTime = actualTempTime;
-//    minTempTime = (actualTempTime + tl.minTime);
-//    maxTempTime = (actualTempTime + tl.maxTime);
-
     Serial.println("Inicializado Temperatura Ciclica");
 }
 

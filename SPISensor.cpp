@@ -15,12 +15,12 @@ SPISensor::read(uint8_t pin){
 }
 
 uint16_t
-SPISensor::read16(uint8_t pin){
-
-    
+SPISensor::read16(uint8_t pin)
+{   
     //discard acutal conversion
     digitalWrite(pin, LOW);
-    delay(10);
+    SPI.transfer16(0xFFFF);
+    delay(15);
 
     //initalize new convervion
     digitalWrite(pin, HIGH);
@@ -28,14 +28,11 @@ SPISensor::read16(uint8_t pin){
     
     //read actual temperature.
     digitalWrite(pin, LOW);
-    //delayMicroseconds(1);
-    __asm__("nop"); //waste 62.5ns
     __asm__("nop"); //waste 62.5ns
     __asm__("nop"); //waste 62.5ns
     __asm__("nop"); //waste 62.5ns
     uint16_t data = SPI.transfer16(0xFFFF);
     digitalWrite(pin, HIGH);
-    //delay(50);
 
     return data;
 }
