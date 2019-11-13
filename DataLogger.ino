@@ -149,10 +149,6 @@ void getTemperatures(void)
     for(int8_t i = 0; i < numberOfSensors; i++)
     {
         temperature[i] = static_cast<double>(thermoparK.readCelcius(sensorCSPINs[i]));
-
-        #ifdef DEBUG
-            temperature[i] = 50;
-        #endif
     }
 }
 
@@ -214,8 +210,15 @@ bool oilHeaterFail(void)
 void heaterOil(void)
 {
     digitalWrite(SSR, HIGH);//Liga Resistencia do oleo
-    digitalWrite(CoolerPin01, HIGH);//Desliga ventoinha
-    digitalWrite(CoolerPin02, HIGH);//Desliga ventoinha
+    digitalWrite(CoolerPin01, LOW);//Desliga ventoinha
+    digitalWrite(CoolerPin02, LOW);//Desliga ventoinha
+}
+
+void coolerOil(void)
+{
+    digitalWrite(SSR, LOW);//Liga Resistencia do oleo
+    digitalWrite(CoolerPin01, HIGH);//liga ventoinha
+    digitalWrite(CoolerPin02, HIGH);//liga ventoinha
 }
 
 void heatOil(void)
@@ -230,24 +233,14 @@ void heatOil(void)
     static uint32_t maxLowTempTime = ULONG_MAX;
 
     getTemperatures();
-
-    #ifndef DEGUG
-        OilTemperature = max(OIL_TEMP_01, OIL_TEMP_02);
-    #endif
+    OilTemperature = max(OIL_TEMP_01, OIL_TEMP_02);
     
     if(oilHeaterFail())
     {
         heater == false;
-        digitalWrite(SSR, LOW); //Desliga Resistencia oleo
-        digitalWrite(CoolerPin01, LOW);//liga ventinhas
-        digitalWrite(CoolerPin02, LOW);//liga ventinhas
-
+        coolerOil();
         NormalOperation = false;
         Serial.print("\n\n \t\t *****Erro de leitura nos sensores de oleo*****\n\n");
-
-        #ifdef DEBUG
-            OilTemperature -= 2;
-        #endif
     }
 
     if(logging)
@@ -258,9 +251,7 @@ void heatOil(void)
             {
                 heaterOil();
             }else{
-                digitalWrite(SSR, LOW); //Desliga Resistencia oleo
-                digitalWrite(CoolerPin01, LOW);//liga ventoinhas
-                digitalWrite(CoolerPin02, LOW);//liga ventoinhas
+                coolerOil();
             }
         }else{            
             Serial.print("Oil temp: ");
@@ -269,12 +260,10 @@ void heatOil(void)
             Serial.print(tl.temperature);
             
             if(tl.heater)
-            {
-                #ifdef DEBUG
-                    OilTemperature += 5;
-                    temperature[0] = temperature[1] = OilTemperature;
-                #endif
-                
+            {             
+                digitalWrite(CoolerPin01, LOW);//Desliga ventoinha
+                digitalWrite(CoolerPin02, LOW);//Desliga ventoinha
+       
                 if(maxHighTempTime != ULONG_MAX)
                 {
                     Serial.print("   maxHighTempTime: ");
@@ -284,12 +273,10 @@ void heatOil(void)
                 }
                 
                 Serial.println("Aquencendo Ventoinha desligada\n");
-                digitalWrite(CoolerPin01, HIGH);//Desliga ventoinha
-                digitalWrite(CoolerPin02, HIGH);//Desliga ventoinha
             
                 if(OilTemperature < tl.temperature)
                 {
-                    digitalWrite(SSR, HIGH); //liga a resistencia do oleo
+                    heaterOil();
                 }
                                 
                 if(OilTemperature >= tl.temperature)
@@ -318,15 +305,10 @@ void heatOil(void)
             }
             
             if(!tl.heater)
-            {             
-                #ifdef DEBUG
-                    OilTemperature -= 1;
-                    temperature[0] = temperature[1] = OilTemperature;
-                #endif                 
-                                                  
+            {                                     
                 if(OilTemperature >= tl.temperature)
                 {   
-                    digitalWrite(SSR, LOW); //desliga a resistencia do oleo
+                    coolerOil();
                 }
                                          
                 if(OilTemperature < tl.temperature || actualTempTime > minLowTempTime)
@@ -360,8 +342,8 @@ void heatOil(void)
                 }
                 
                 Serial.println("Resfriando Ventoinha ligada");
-                digitalWrite(CoolerPin01, LOW);//Liga ventoinha  
-                digitalWrite(CoolerPin02, LOW);//Liga ventoinha               
+                digitalWrite(CoolerPin01, HIGH);//Liga ventoinha  
+                digitalWrite(CoolerPin02, HIGH);//Liga ventoinha               
             }
            
             if(lowTemp && actualTempTime >= maxLowTempTime)
@@ -376,13 +358,13 @@ void heatOil(void)
         } 
         actualTempTime = getAcumulatedSecs();    
     }
-
-    Serial.println("Estados dos CS_Pins");
-    Serial.println(digitalRead(SS));
-    Serial.println(digitalRead(A8));
-    Serial.println(digitalRead(34));
-    Serial.println(digitalRead(33));
-    Serial.println(digitalRead(31));
+//
+//    Serial.println("Estados dos CS_Pins");
+//    Serial.println(digitalRead(SS));
+//    Serial.println(digitalRead(A8));
+//    Serial.println(digitalRead(34));
+//    Serial.println(digitalRead(33));
+//    Serial.println(digitalRead(31));
     
     wdt_reset();
 }
@@ -478,9 +460,9 @@ void setup()
 
     //Configura a saida para a ventoinha.
     pinMode(CoolerPin01, OUTPUT);
-    digitalWrite(CoolerPin01, HIGH);
+    digitalWrite(CoolerPin01, LOW);
     pinMode(CoolerPin02, OUTPUT);
-    digitalWrite(CoolerPin02, HIGH);
+    digitalWrite(CoolerPin02, LOW);
 
     //Configura a saida para o Rele de Estado Sólido.
     pinMode(SSR, OUTPUT);
@@ -502,6 +484,8 @@ void setup()
     }else {
         sdcardOK = true;        
     }
+    file.open("TempCicle.csv", FILE_READ);
+    file.close();
     delay(100);
     Serial.println(digitalRead(A8));
                                  
@@ -524,13 +508,7 @@ void setup()
         lcd.print("Wdt Rst");
         Serial.println("\n\n***** Houve reset por estouro do watchdog *****");
         delay(5000);
-    }
-
-    #ifdef DEBUG
-        OilTemperature = 50;
-        temperature[0] = temperature[1] = OilTemperature;
-    #endif
-    
+    } 
     interrupts();
 }
 

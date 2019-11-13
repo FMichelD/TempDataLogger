@@ -25,6 +25,7 @@ SPISensor::read16(uint8_t pin)
     //initalize new convervion
     digitalWrite(pin, HIGH);
     delay(280); //wait for conversion time: from datashee 0.17s - 0.22s (max)
+    wdt_reset();
     
     //read actual temperature.
     digitalWrite(pin, LOW);
