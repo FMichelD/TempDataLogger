@@ -13,7 +13,7 @@
 #include "SDCardManager.h"
 
 //Pin 12 as led state for logging
-static uint8_t ledLogState = 12;
+static uint8_t ledLogState = 6;
 static uint8_t dateTimeSafeable = false;
 
 static bool TempFixed = true;
@@ -77,20 +77,20 @@ enum keys {
 
 //Button objects instantiation
 const bool pullup = true;
-static Button leftButton(25, pullup);
-static Button rightButton(26, pullup);
-static Button upButton(22, pullup);
-static Button downButton(23, pullup);
-static Button enterButton(24, pullup);
-static Button logButton(27, pullup);
+static Button leftButton(10, pullup);
+static Button rightButton(9, pullup);
+static Button upButton(13, pullup);
+static Button downButton(12, pullup);
+static Button enterButton(11, pullup);
+static Button logButton(7, pullup);
 
 // Pin mapping for the display
-const uint8_t LCD_RS = 7;
-const uint8_t LCD_E = 6;
-const uint8_t LCD_D4 = 5;
-const uint8_t LCD_D5 = 4;
-const uint8_t LCD_D6 = 3;
-const uint8_t LCD_D7 = 2;
+const uint8_t LCD_RS = 14;
+const uint8_t LCD_E = 15
+const uint8_t LCD_D4 = 16;
+const uint8_t LCD_D5 = 17;
+const uint8_t LCD_D6 = 18;
+const uint8_t LCD_D7 = 19;
 //LCD R/W pin to ground
 //10K potentiometer to VO
 

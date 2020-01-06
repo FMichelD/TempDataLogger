@@ -18,32 +18,35 @@
 //#define DEBUG
 #undef DEBUG
 
-uint8_t numUnusedPins = 42;
-const int unusedPins[] = { 14, 15, 
-                           16, 17, 18, 19, 28,
-                           29, 30, 32,  53, 
+uint8_t numUnusedPins = 21;
+const int unusedPins[] = {   2,  3,  4,
+                            29, 30, 31,
                            
-                           A0, A1, A2, A3, A4,
-                           A5, A6, A7, A9,
-                           A10, A11, A12, A13,
-                           A14, A15, 10,                          
-                           };
+                            A0,  A1,  A2,  A3,  A4,
+                            A5,  A6,  A7,  A9, A10,
+                            A11, A12, A13, A14, A15,                        
+                         };
 
 
 const int8_t numberOfSensors = 18;
 uint8_t sensorCSPINs[numberOfSensors]{ 40, 41, 43, 42, 44,
                                        45, 46, 47, 48, 49,
                                        39, 38, 37, 36, 35, 
-                                       34, 33, 31};
+                                       34, 33, 32};
 
-//uint8_t sensorCSPINs[numberOfSensors]{34, 33, 31};   
+const int8_t irf01 = 22;
+const int8_t irf02 = 23;
+const int8_t triac01 = 24;
+const int8_t triac01 = 25;
+const int8_t rele = 26;
+const int8_t sdCardWP = 27;
+const int8_t sdCardDetect = 28;
                                     
 ThermoparK thermoparK;
 double temperature[numberOfSensors];
 
-#define OIL_TEMP_01 temperature[0]
-#define OIL_TEMP_02 temperature[1]
-
+#define OIL_TEMP_01 temperature[16]
+#define OIL_TEMP_02 temperature[17]
 
 //Extern declared variables
 extern uint8_t logging;
@@ -79,9 +82,6 @@ char* strTime = (char*)"00:00:00";
 char* strDate = (char*)"00/00/0000";
 
 extern LiquidSystem systemMenu;
-
-const byte pwmPin = 13;
-byte pwmLevel = 0;
 
 const byte ledPin = LED_BUILTIN;
 bool ledState = LOW;
@@ -466,7 +466,7 @@ void setup()
     delay(100);
 
     //Configura o display.
-    lcd.begin(40, 2);
+    lcd.begin(16, 2);
     lcd.clear();
     lcd.print("Initialize the SD");
     

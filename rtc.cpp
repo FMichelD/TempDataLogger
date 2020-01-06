@@ -27,18 +27,6 @@ uint32_t getAcumulatedSecs(void)
     uint16_t mins = (t.min * 60);
     uint8_t secs = (t.sec);
     uint32_t acms = days + hours + mins + secs;
-    
-//    Serial.print("\nDia: ");
-//    Serial.print(days);
-//    Serial.print("   hora: ");
-//    Serial.print(hours);
-//    Serial.print("   min: ");
-//    Serial.print(mins);
-//    Serial.print("   sec: ");
-//    Serial.println(secs);
-//    
-//    Serial.print("Acum Secs: ");
-//    Serial.println(acms); 
 
     return acms;
 }
