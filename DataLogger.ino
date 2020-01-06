@@ -19,11 +19,7 @@
 #undef DEBUG
 
 uint8_t numUnusedPins = 42;
-const int unusedPins[] = { 40, 41, 42, 43, 44,
-                           45, 46, 47, 48, 49,
-                           39, 38, 37, 36, 35,
-
-                           14, 15, 
+const int unusedPins[] = { 14, 15, 
                            16, 17, 18, 19, 28,
                            29, 30, 32,  53, 
                            
@@ -34,13 +30,13 @@ const int unusedPins[] = { 40, 41, 42, 43, 44,
                            };
 
 
-const int8_t numberOfSensors = 3;
-//uint8_t sensorCSPINs[numberOfSensors]{ 40, 41, 42, 43, 44,
-//                                       45, 46, 47, 48, 49,
-//                                       39, 38, 37, 36, 35, 
-//                                       34, 33, 31};
+const int8_t numberOfSensors = 18;
+uint8_t sensorCSPINs[numberOfSensors]{ 40, 41, 43, 42, 44,
+                                       45, 46, 47, 48, 49,
+                                       39, 38, 37, 36, 35, 
+                                       34, 33, 31};
 
-uint8_t sensorCSPINs[numberOfSensors]{34, 33, 31};   
+//uint8_t sensorCSPINs[numberOfSensors]{34, 33, 31};   
                                     
 ThermoparK thermoparK;
 double temperature[numberOfSensors];

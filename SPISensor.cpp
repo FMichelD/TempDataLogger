@@ -1,4 +1,5 @@
 #include "SPISensor.h"
+#include <avr/wdt.h>
 
 SPISensor::SPISensor()
 {
