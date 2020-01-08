@@ -37,8 +37,14 @@ uint8_t sensorCSPINs[numberOfSensors]{ 40, 41, 43, 42, 44,
 const int8_t irf01 = 22;
 const int8_t irf02 = 23;
 const int8_t triac01 = 24;
-const int8_t triac01 = 25;
+const int8_t triac02 = 25;
 const int8_t rele = 26;
+
+//alias to pins 22 (irf01) and 24 (triac01)
+#define CoolerAC triac01
+#define CoolerDC irf01
+
+
 const int8_t sdCardWP = 27;
 const int8_t sdCardDetect = 28;
                                     
@@ -85,9 +91,11 @@ extern LiquidSystem systemMenu;
 
 const byte ledPin = LED_BUILTIN;
 bool ledState = LOW;
-const byte SSR = 11;
-const byte CoolerPin01 = 8;
-const byte CoolerPin02 = 9;
+const byte SSR = 5;
+
+//const byte CoolerAC = 29;
+//const byte CoolerDC = 30;
+
 bool NormalOperation = true;
 float OilTemperature;
 
@@ -206,15 +214,15 @@ bool oilHeaterFail(void)
 void heaterOil(void)
 {
     digitalWrite(SSR, HIGH);//Liga Resistencia do oleo
-    digitalWrite(CoolerPin01, LOW);//Desliga ventoinha
-    digitalWrite(CoolerPin02, LOW);//Desliga ventoinha
+    digitalWrite(CoolerAC, LOW);//Desliga ventoinha
+    digitalWrite(CoolerDC, LOW);//Desliga ventoinha
 }
 
 void coolerOil(void)
 {
     digitalWrite(SSR, LOW);//Liga Resistencia do oleo
-    digitalWrite(CoolerPin01, HIGH);//liga ventoinha
-    digitalWrite(CoolerPin02, HIGH);//liga ventoinha
+    digitalWrite(CoolerAC, HIGH);//liga ventoinha
+    digitalWrite(CoolerDC, HIGH);//liga ventoinha
 }
 
 void heatOil(void)
@@ -257,8 +265,8 @@ void heatOil(void)
             
             if(tl.heater)
             {             
-                digitalWrite(CoolerPin01, LOW);//Desliga ventoinha
-                digitalWrite(CoolerPin02, LOW);//Desliga ventoinha
+                digitalWrite(CoolerAC, LOW);//Desliga ventoinha
+                digitalWrite(CoolerDC, LOW);//Desliga ventoinha
        
                 if(maxHighTempTime != ULONG_MAX)
                 {
@@ -338,8 +346,8 @@ void heatOil(void)
                 }
                 
                 Serial.println("Resfriando Ventoinha ligada");
-                digitalWrite(CoolerPin01, HIGH);//Liga ventoinha  
-                digitalWrite(CoolerPin02, HIGH);//Liga ventoinha               
+                digitalWrite(CoolerAC, HIGH);//Liga ventoinha  
+                digitalWrite(CoolerDC, HIGH);//Liga ventoinha               
             }
            
             if(lowTemp && actualTempTime >= maxLowTempTime)
@@ -416,8 +424,8 @@ void treatstTimer1interruption()
     {
         lcd.print("Erro!!");
         digitalWrite(SSR, LOW); //desliga a resistencia do oleo
-        digitalWrite(CoolerPin01, LOW);//Liga ventoinha  
-        digitalWrite(CoolerPin02, LOW);//Liga ventoinha    
+        digitalWrite(CoolerAC, LOW);//Liga ventoinha  
+        digitalWrite(CoolerDC, LOW);//Liga ventoinha    
 
         wdt_reset();
     }else{  
@@ -430,10 +438,9 @@ void treatstTimer1interruption()
     interrupts();
 }
 
-void setup()
-{  
-     Serial.begin(115200);
-         //Configura os pinos não usados como saida digital em nivel alto.
+void configPins()
+{
+    //Configura os pinos não usados como saida digital em nivel alto.
     for(uint8_t i = 0; i < numUnusedPins; ++i){
         pinMode(unusedPins[i], OUTPUT);
         digitalWrite(unusedPins[i], HIGH);
@@ -442,9 +449,23 @@ void setup()
         Serial.print(":");
         Serial.println(digitalRead(unusedPins[i]));
     }
-    delay(200);
-     
-    //Configura os pinos de seleção de sensores como saida em nivel alto.
+
+    //Configura como entrada digital em pullup
+    pinMode(sdCardDetect, INPUT_PULLUP);
+    pinMode(sdCardWP, INPUT_PULLUP);
+
+    //Configura como saida digital em nivel baixo
+    pinMode(irf01, OUTPUT);
+    digitalWrite(irf01, LOW);
+    pinMode(irf02, OUTPUT);
+    digitalWrite(irf02, LOW);
+    pinMode(triac01, OUTPUT);
+    digitalWrite(triac01, LOW);
+    pinMode(triac02, OUTPUT);
+    digitalWrite(triac02, LOW);  
+
+    //Configura os pinos de seleção de sensores como saida em nivel alto,
+    //desativando a leitura dos mesmos.
     for(uint8_t i = 0; i < numberOfSensors; ++i){
         pinMode(sensorCSPINs[i], OUTPUT);
         digitalWrite(sensorCSPINs[i], HIGH);
@@ -452,19 +473,53 @@ void setup()
         Serial.print(sensorCSPINs[i]);
         Serial.print(":");
         Serial.println(digitalRead(sensorCSPINs[i]));
-    }
+    } 
 
     //Configura a saida para a ventoinha.
-    pinMode(CoolerPin01, OUTPUT);
-    digitalWrite(CoolerPin01, LOW);
-    pinMode(CoolerPin02, OUTPUT);
-    digitalWrite(CoolerPin02, LOW);
+    pinMode(CoolerAC, OUTPUT);
+    digitalWrite(CoolerAC, LOW);
+    pinMode(CoolerDC, OUTPUT);
+    digitalWrite(CoolerDC, LOW);
 
     //Configura a saida para o Rele de Estado Sólido.
     pinMode(SSR, OUTPUT);
     digitalWrite(SSR, LOW);
     delay(100);
+}
 
+bool isSDCardInserted()
+{
+    if(!digitalRead(sdCardDetect))
+    {
+        lcd.clear();
+        lcd.print("Insert SDCard");
+        return false;
+    } 
+
+    lcd.clear();
+    return true;
+}
+
+void initializeSdCard()
+{
+    if(isSDCardInserted())
+    {
+        //Initialize the SD.
+        if(!sd.begin(SD_CONFIG)) {
+            sd.initErrorHalt(&Serial);
+            sdcardOK = false;
+        }else {
+            sdcardOK = true;        
+        }
+    }
+}
+ 
+void setup()
+{  
+    Serial.begin(115200);
+    configPins();
+    delay(200);
+     
     //Configura o display.
     lcd.begin(16, 2);
     lcd.clear();
@@ -473,13 +528,8 @@ void setup()
     SPI.begin();
     delay(100);
 
-    //Initialize the SD.
-    if(!sd.begin(SD_CONFIG)) {
-        sd.initErrorHalt(&Serial);
-        sdcardOK = false;
-    }else {
-        sdcardOK = true;        
-    }
+    initializeSdCard();
+
     file.open("TempCicle.csv", FILE_READ);
     file.close();
     delay(100);
@@ -499,7 +549,7 @@ void setup()
 
     wdt_enable(WDTO_8S);
 
-    if( (MCUSR >> 3) & 1 == 1)
+    if( ((MCUSR >> 3) & 1) == 1)
     {
         lcd.print("Wdt Rst");
         Serial.println("\n\n***** Houve reset por estouro do watchdog *****");
@@ -510,6 +560,9 @@ void setup()
 
 void loop()
 {
+    while(!isSDCardInserted())
+      delay(250);
+    
     checkButtons(); 
     wdt_reset();   
 }
