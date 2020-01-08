@@ -549,7 +549,17 @@ void setup()
 void loop()
 {
     while(!isSDCardInserted())
-      delay(250);
+    {
+        sdcardOK = false;
+        delay(250);
+    }
+
+    if(!sdcardOK)
+    {
+        initializeSdCard();      
+    }
+      
+
     
     checkButtons(); 
     wdt_reset();   
