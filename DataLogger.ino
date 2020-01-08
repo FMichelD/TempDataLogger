@@ -44,7 +44,6 @@ const int8_t rele = 26;
 #define CoolerAC triac01
 #define CoolerDC irf01
 
-
 const int8_t sdCardWP = 27;
 const int8_t sdCardDetect = 28;
                                     
@@ -92,10 +91,6 @@ extern LiquidSystem systemMenu;
 const byte ledPin = LED_BUILTIN;
 bool ledState = LOW;
 const byte SSR = 5;
-
-//const byte CoolerAC = 29;
-//const byte CoolerDC = 30;
-
 bool NormalOperation = true;
 float OilTemperature;
 
@@ -184,7 +179,8 @@ void SensorsLogSerial()
     Serial.println(digitalRead(A8));
 }
 
-void updateLoggingTime(){
+void updateLoggingTime()
+{
     nextLoggingTime += loggingInterval;
     nextLoggingTime = nextLoggingTime % 60;
 }
@@ -361,15 +357,7 @@ void heatOil(void)
             }
         } 
         actualTempTime = getAcumulatedSecs();    
-    }
-//
-//    Serial.println("Estados dos CS_Pins");
-//    Serial.println(digitalRead(SS));
-//    Serial.println(digitalRead(A8));
-//    Serial.println(digitalRead(34));
-//    Serial.println(digitalRead(33));
-//    Serial.println(digitalRead(31));
-    
+    }    
     wdt_reset();
 }
 
