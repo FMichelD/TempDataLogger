@@ -86,7 +86,7 @@ static Button logButton(7, pullup);
 
 // Pin mapping for the display
 const uint8_t LCD_RS = 14;
-const uint8_t LCD_E = 15
+const uint8_t LCD_E = 15;
 const uint8_t LCD_D4 = 16;
 const uint8_t LCD_D5 = 17;
 const uint8_t LCD_D6 = 18;
