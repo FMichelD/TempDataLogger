@@ -29,8 +29,8 @@ const int unusedPins[] = {   2,  3,  4,
 
 
 const int8_t numberOfSensors = 18;
-uint8_t sensorCSPINs[numberOfSensors]{ 40, 41, 43, 42, 44,
-                                       45, 46, 47, 48, 49,
+uint8_t sensorCSPINs[numberOfSensors]{ 49, 48, 47, 46, 45,
+                                       44, 43, 42, 41, 40,
                                        39, 38, 37, 36, 35, 
                                        34, 33, 32};
 
@@ -41,7 +41,7 @@ const int8_t triac02 = 25;
 const int8_t rele = 26;
 
 //alias to pins 22 (irf01) and 24 (triac01)
-#define CoolerAC triac01
+#define CoolerAC irf02
 #define CoolerDC irf01
 
 const int8_t sdCardWP = 27;
@@ -140,7 +140,7 @@ void SensorsLogSDCard(uint8_t numberOfSensors)
     Serial.println("Salvamento OK");
 
     delay(500);
-    Serial.println(digitalRead(A8));
+    Serial.println(digitalRead(53));
 }
 
 void getTemperatures(void)
@@ -156,7 +156,7 @@ void SensorsLogSerial()
     for(int8_t i = 0; i < numberOfSensors; i++) {
               
         switch(sensorCSPINs[i]){
-            case 34:
+            case 32:
                 Serial.print("Oleo_01: ");
                 break;
             
@@ -164,7 +164,7 @@ void SensorsLogSerial()
                 Serial.print("Oleo_02: ");
                 break;
             
-            case 31:
+            case 34:
                 Serial.print("TAmb: ");
                 break;
             
@@ -176,7 +176,7 @@ void SensorsLogSerial()
         Serial.println(temperature[i]);
     }
     Serial.println();
-    Serial.println(digitalRead(A8));
+    Serial.println(digitalRead(53));
 }
 
 void updateLoggingTime()
@@ -216,7 +216,7 @@ void heaterOil(void)
 
 void coolerOil(void)
 {
-    digitalWrite(SSR, LOW);//Liga Resistencia do oleo
+    digitalWrite(SSR, LOW);//Desliga Resistencia do oleo
     digitalWrite(CoolerAC, HIGH);//liga ventoinha
     digitalWrite(CoolerDC, HIGH);//liga ventoinha
 }
@@ -224,7 +224,7 @@ void coolerOil(void)
 void heatOil(void)
 {   
     extern uint8_t ledLogState;
-    bool logging = digitalRead(ledLogState);
+    //extern uint8_t logging = digitalRead(ledLogState);
     bool heater;
     static bool highTemp = false;
     static bool lowTemp = false;
@@ -232,6 +232,7 @@ void heatOil(void)
     static uint32_t minLowTempTime = ULONG_MAX;
     static uint32_t maxLowTempTime = ULONG_MAX;
 
+    logging = digitalRead(ledLogState);
     getTemperatures();
     OilTemperature = max(OIL_TEMP_01, OIL_TEMP_02);
     
@@ -370,9 +371,9 @@ void sdCardLogging()
 
         if(actualTime == nextLoggingTime)
         {
+            lcd.clear();
             lcd.print("Salvando...");
             updateLoggingTime();
-            lcd.clear();
             copy(rtc.getDateStr(FORMAT_SHORT, FORMAT_LITTLEENDIAN, '/'), strDate, 11);
             copy(rtc.getTimeStr(FORMAT_LONG), strTime, 9);
 
@@ -477,27 +478,57 @@ void configPins()
 
 bool isSDCardInserted()
 {
-    if(!digitalRead(sdCardDetect))
+    noInterrupts();
+    
+    //digitalRead(sdCardDetect) == HIGH -> SDCard not inserted
+    bool SDCardInserted = !digitalRead(sdCardDetect);
+    
+    if(!SDCardInserted)
     {
+        coolerOil();
+        sdcardOK = false;
+        logging = false;
+        
+        Serial.print("SDCard presente?");   
+        Serial.println(SDCardInserted);
         lcd.clear();
-        lcd.print("Insert SDCard");
-        return false;
-    } 
+        lcd.print("Inserir SDCard!");
 
-    lcd.clear();
+        //aguarda até a insersão do cartão
+        //TODO: mudar para usar sleep e interupção externa
+        while(!SDCardInserted){
+          SDCardInserted = !digitalRead(sdCardDetect);
+        }
+    }
+
+    //initializeSdCard();
+    interrupts();
     return true;
 }
 
 void initializeSdCard()
-{
-    if(isSDCardInserted())
+{    
+    if(!isSDCardInserted() || sdcardOK == false)
     {
         //Initialize the SD.
-        if(!sd.begin(SD_CONFIG)) {
-            sd.initErrorHalt(&Serial);
+        if(!sd.begin(SD_CONFIG)) {            
+            Serial.println("Erro no SdCard");
+            lcd.clear();
+            lcd.print("Erro no SdCard");
             sdcardOK = false;
+            sd.initErrorHalt(&Serial);
+
+//            while(!sdcardOK)
+//            {
+//                configPins();
+//                //digitalWrite(53, LOW);
+//                Serial.println("Tentando inicializar SDCard");
+//                initializeSdCard();
+//            }
         }else {
-            sdcardOK = true;        
+            Serial.println("SdCard Configurado");
+           // digitalWrite(53, HIGH);
+            sdcardOK = true;       
         }
     }
 }
@@ -511,10 +542,10 @@ void setup()
     //Configura o display.
     lcd.begin(16, 2);
     lcd.clear();
-    lcd.print("Initialize the SD");
+    lcd.print("Inicializando...");
     
     SPI.begin();
-    delay(100);
+    delay(1000);
 
     initializeSdCard();
 
@@ -546,20 +577,27 @@ void setup()
     interrupts();
 }
 
+//void SDCardNotIserted()
+//{
+//  lcd.clear();
+//  while(!isSDCardInserted())
+//  {
+//    lcd.print("Inserir SDCard!");
+//    Serial.println("Inserir SDCard");
+//  }
+//}
+
 void loop()
 {
-    while(!isSDCardInserted())
+    if(!isSDCardInserted())
     {
         sdcardOK = false;
-        delay(250);
     }
 
-    if(!sdcardOK)
-    {
-        initializeSdCard();      
-    }
-      
-
+//    if(!sdcardOK)
+//    {
+//        initializeSdCard();   
+//    }
     
     checkButtons(); 
     wdt_reset();   

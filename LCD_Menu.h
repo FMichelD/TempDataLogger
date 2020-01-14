@@ -89,7 +89,7 @@ const uint8_t LCD_RS = 14;
 const uint8_t LCD_E = 15;
 const uint8_t LCD_D4 = 16;
 const uint8_t LCD_D5 = 17;
-const uint8_t LCD_D6 = 18;
+const uint8_t LCD_D6 = 18; 
 const uint8_t LCD_D7 = 19;
 //LCD R/W pin to ground
 //10K potentiometer to VO

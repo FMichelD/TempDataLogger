@@ -19,20 +19,22 @@
 */
 // SDCARD_SS_PIN is defined for the built-in SD on some boards.
 #ifndef SDCARD_SS_PIN
-const uint8_t SD_CS_PIN = A8;
+const uint8_t SD_CS_PIN = 53;
 #else  // SDCARD_SS_PIN
 // Assume built-in SD is used.
-const uint8_t SD_CS_PIN = A8;
+const uint8_t SD_CS_PIN = SS;
 #endif  // SDCARD_SS_PIN
 
 // Try to select the best SD card configuration.
-#if HAS_SDIO_CLASS
-    #define SD_CONFIG SdioConfig(FIFO_SDIO)
-#elif ENABLE_DEDICATED_SPI
-    #define SD_CONFIG SdSpiConfig(SD_CS_PIN, DEDICATED_SPI)
-#else  // HAS_SDIO_CLASS
-    #define SD_CONFIG SdSpiConfig(SD_CS_PIN, SHARED_SPI)
-#endif  // HAS_SDIO_CLASS
+//#if HAS_SDIO_CLASS
+//    #define SD_CONFIG SdioConfig(FIFO_SDIO)
+//#elif ENABLE_DEDICATED_SPI
+//    #define SD_CONFIG SdSpiConfig(SD_CS_PIN, DEDICATED_SPI)
+//#else  // HAS_SDIO_CLASS
+//    #define SD_CONFIG SdSpiConfig(SD_CS_PIN, SHARED_SPI)
+//#endif  // HAS_SDIO_CLASS
+
+#define SD_CONFIG SdSpiConfig(SD_CS_PIN, SHARED_SPI)
 
 #if SD_FAT_TYPE == 1
    extern SdFat sd;
