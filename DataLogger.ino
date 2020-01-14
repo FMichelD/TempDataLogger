@@ -413,8 +413,8 @@ void treatstTimer1interruption()
     {
         lcd.print("Erro!!");
         digitalWrite(SSR, LOW); //desliga a resistencia do oleo
-        digitalWrite(CoolerAC, LOW);//Liga ventoinha  
-        digitalWrite(CoolerDC, LOW);//Liga ventoinha    
+        digitalWrite(CoolerAC, HIGH);//Liga ventoinha  
+        digitalWrite(CoolerDC, HIGH);//Liga ventoinha    
 
         wdt_reset();
     }else{  
@@ -577,15 +577,6 @@ void setup()
     interrupts();
 }
 
-//void SDCardNotIserted()
-//{
-//  lcd.clear();
-//  while(!isSDCardInserted())
-//  {
-//    lcd.print("Inserir SDCard!");
-//    Serial.println("Inserir SDCard");
-//  }
-//}
 
 void loop()
 {
