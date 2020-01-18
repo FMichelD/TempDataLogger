@@ -41,7 +41,7 @@ const int8_t triac02 = 25;
 const int8_t rele = 26;
 
 //alias to pins 22 (irf01) and 24 (triac01)
-#define CoolerAC irf02
+#define CoolerAC triac01
 #define CoolerDC irf01
 
 const int8_t sdCardWP = 27;
@@ -466,7 +466,7 @@ void configPins()
 
     //Configura a saida para a ventoinha.
     pinMode(CoolerAC, OUTPUT);
-    digitalWrite(CoolerAC, LOW);
+    digitalWrite(CoolerAC, LOW);//Desliga ventoinha.
     pinMode(CoolerDC, OUTPUT);
     digitalWrite(CoolerDC, LOW);
 
@@ -589,7 +589,7 @@ void loop()
 //    {
 //        initializeSdCard();   
 //    }
-    
+
     checkButtons(); 
     wdt_reset();   
 }
