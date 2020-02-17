@@ -248,6 +248,10 @@ void heatOil(void)
     {
         if(TempFixed)
         {
+            Serial.println("Temperatura Fixa Maxima: 85C");
+            Serial.print("Temp max: ");
+            Serial.println(OilTemperature);
+            
             if(OilTemperature < 85)
             {
                 heaterOil();
@@ -591,5 +595,13 @@ void loop()
 //    }
 
     checkButtons(); 
+
+    if(!logging)
+    {
+        //Configura a saida do Rele de Estado Sólido como desligado
+        pinMode(SSR, OUTPUT);
+        digitalWrite(SSR, LOW);
+    }
+    
     wdt_reset();   
 }
