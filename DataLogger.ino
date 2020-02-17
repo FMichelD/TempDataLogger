@@ -51,6 +51,7 @@ ThermoparK thermoparK;
 double temperature[numberOfSensors];
 
 #define OIL_TEMP_01 temperature[16]
+#define OIL_TEMP_01 temperature[16]
 #define OIL_TEMP_02 temperature[17]
 
 //Extern declared variables
@@ -194,16 +195,10 @@ void updateLcd()
 
 bool oilHeaterFail(void)
 {
-    if( isnan(OIL_TEMP_01) || OIL_TEMP_01 < 10 || OIL_TEMP_01 > 150)
-    {
+    for(int8_t i = 0; i < numberOfSensors; i++) {
+      if(temperature[i] > 140)
         return true;
     }
-    
-    if( isnan(OIL_TEMP_02) || OIL_TEMP_02 < 10 || OIL_TEMP_02 > 150)
-    {
-        return true;
-    }
-
     return false;
 }
 
@@ -248,11 +243,11 @@ void heatOil(void)
     {
         if(TempFixed)
         {
-            Serial.println("Temperatura Fixa Maxima: 85C");
+            Serial.println("Temperatura Fixa Maxima: 140C");
             Serial.print("Temp max: ");
             Serial.println(OilTemperature);
             
-            if(OilTemperature < 85)
+            if(OilTemperature < 140)
             {
                 heaterOil();
             }else{
@@ -415,11 +410,17 @@ void treatstTimer1interruption()
 
     if(!NormalOperation)
     {
-        lcd.print("Erro!!");
+        lcd.clear();
+        lcd.setCursor(0,0)
+        lcd.print("Erro:");
+        lcd.setCursor(0,1)
+        lcd.print("Alta Temperatura");
         digitalWrite(SSR, LOW); //desliga a resistencia do oleo
         digitalWrite(CoolerAC, HIGH);//Liga ventoinha  
-        digitalWrite(CoolerDC, HIGH);//Liga ventoinha    
-
+        digitalWrite(CoolerDC, HIGH);//Liga ventoinha  
+        logging = false;
+        wdt_reset();
+        delay(2000);
         wdt_reset();
     }else{  
         updateLcd();
