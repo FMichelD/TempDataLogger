@@ -18,6 +18,7 @@
 //#define DEBUG
 #undef DEBUG
 
+bool sdcardWasPresent;
 uint8_t numUnusedPins = 21;
 const int unusedPins[] = {   2,  3,  4,
                             29, 30, 31,
@@ -494,49 +495,26 @@ void configPins()
 
 bool isSDCardInserted()
 {
-    noInterrupts();
-    
+    return !digitalRead(sdCardDetect);
+}
+
+bool isNotSDCardInserted()
+{
     //digitalRead(sdCardDetect) == HIGH -> SDCard not inserted
-    bool SDCardInserted = !digitalRead(sdCardDetect);
-    
-    if(!SDCardInserted)
-    {
-        coolerOil();
-        sdcardOK = false;
-        logging = false;
-        
-        Serial.print("SDCard presente?");   
-        Serial.println(SDCardInserted);
-        lcd.clear();
-        lcd.print("Inserir SDCard!");
-
-        //aguarda até a insersão do cartão
-        //TODO: mudar para usar sleep e interupção externa
-        while(!SDCardInserted){
-          SDCardInserted = !digitalRead(sdCardDetect);
-        }
-    }
-
-    //initializeSdCard();
-    interrupts();
-    return true;
+    return digitalRead(sdCardDetect);
 }
 
 void initializeSdCard()
 {    
-    if(!isSDCardInserted() || sdcardOK == false)
+    if(isNotSDCardInserted() || sdcardOK == false)
     {
-        //Initialize the SD.
-        //digitalWrite(53, LOW);
         if(!sd.begin(SD_CONFIG)) {            
-            Serial.println("Erro no SdCard");
-            lcd.clear();
-            lcd.print("Erro no SdCard");
-            sdcardOK = false;
+            Serial.println("Inicializando SdCard...");
+             sdcardOK = false;
+             delay(250);
             //sd.initErrorHalt(&Serial);
         }else {
             Serial.println("SdCard Configurado");
-            //digitalWrite(53, HIGH);
             sdcardOK = true;       
         }
     }
@@ -552,7 +530,7 @@ void setup()
     lcd.begin(16, 2);
     lcd.clear();
     lcd.print("Inicializando...");
-
+    sdcardWasPresent = !isNotSDCardInserted();
 
 
     SPI.begin();    
@@ -597,19 +575,52 @@ void setup()
     interrupts();
 }
 
+void waitForSDCardInsertion()
+{
+    noInterrupts();
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Inserir SDCard");
+    //Pin 28 witch is sd card present detector don't have external interrupt option :(
+    while(digitalRead(sdCardDetect));    
+    interrupts();
+}
+
+void waitForSDCardInicialization()
+{
+    noInterrupts();
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Inicializando SDCard!");
+    lcd.setCursor(0, 1);
+    lcd.print("Aguarde...");
+    
+    for(int i = 0; i < 5; ++i){
+        initializeSdCard();
+    }
+    
+    if(!sdcardOK){
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Erro no SDCard!");
+        lcd.setCursor(0, 1);
+        lcd.print("Remova o SDCard!");
+        while(isSDCardInserted());
+    }
+    
+    interrupts();
+} 
 
 void loop()
 {
-    if(!isSDCardInserted())
+    if(isNotSDCardInserted())
     {
-        //lcd.clear();
-        lcd.setCursor(0,0);
-        lcd.print("Insira o SDCard");
-        lcd.setCursor(0,1);
-        lcd.print("ou reinsira o SDCard");
+        waitForSDCardInsertion();
         sdcardOK = false;        
-    }else if(!sdcardOK) {
-      initializeSdCard();
+    }
+
+    if(!sdcardOK) {
+        waitForSDCardInicialization();
     }
 
     checkButtons(); 
