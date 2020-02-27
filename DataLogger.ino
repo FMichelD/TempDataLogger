@@ -39,6 +39,7 @@ const int8_t irf02 = 23;
 const int8_t triac01 = 24;
 const int8_t triac02 = 25;
 const int8_t rele = 26;
+//static uint8_t ledLogState = 6;
 
 //alias to pins 22 (irf01) and 24 (triac01)
 #define CoolerAC triac01
@@ -281,7 +282,7 @@ void heatOil(void)
                                 
                 if(OilTemperature >= tl.temperature)
                 {
-                    digitalWrite(SSR, LOW); //desliga a resistencia do oleo
+                    //digitalWrite(SSR, LOW); //desliga a resistencia do oleo
                     
                     if(!highTemp)
                     {                     
@@ -404,21 +405,31 @@ void serialLogging(void)
     }
 }
 
+void inativar()
+{
+    //Configura a saida do Rele de Estado Sólido como desligado
+    pinMode(SSR, OUTPUT);
+    digitalWrite(SSR, LOW);
+    digitalWrite(ledLogState, LOW);
+}
+
 void treatstTimer1interruption()
 {   
     noInterrupts();  
 
+    NormalOperation = !oilHeaterFail();
     if(!NormalOperation)
     {
         lcd.clear();
-        lcd.setCursor(0,0)
+        lcd.setCursor(0,0);
         lcd.print("Erro:");
-        lcd.setCursor(0,1)
+        lcd.setCursor(0,1);
         lcd.print("Alta Temperatura");
         digitalWrite(SSR, LOW); //desliga a resistencia do oleo
         digitalWrite(CoolerAC, HIGH);//Liga ventoinha  
         digitalWrite(CoolerDC, HIGH);//Liga ventoinha  
         logging = false;
+        inativar();
         wdt_reset();
         delay(2000);
         wdt_reset();
@@ -516,23 +527,16 @@ void initializeSdCard()
     if(!isSDCardInserted() || sdcardOK == false)
     {
         //Initialize the SD.
+        //digitalWrite(53, LOW);
         if(!sd.begin(SD_CONFIG)) {            
             Serial.println("Erro no SdCard");
             lcd.clear();
             lcd.print("Erro no SdCard");
             sdcardOK = false;
-            sd.initErrorHalt(&Serial);
-
-//            while(!sdcardOK)
-//            {
-//                configPins();
-//                //digitalWrite(53, LOW);
-//                Serial.println("Tentando inicializar SDCard");
-//                initializeSdCard();
-//            }
+            //sd.initErrorHalt(&Serial);
         }else {
             Serial.println("SdCard Configurado");
-           // digitalWrite(53, HIGH);
+            //digitalWrite(53, HIGH);
             sdcardOK = true;       
         }
     }
@@ -548,20 +552,31 @@ void setup()
     lcd.begin(16, 2);
     lcd.clear();
     lcd.print("Inicializando...");
+
+
+
+    SPI.begin();    
+    initRTC();
+    initMenu(); 
+    delay(2000);
+
+//    
+//    while(!digitalRead(sdCardDetect)){
+//        lcd.print("Remova o SDCard");
+//    }
     
-    SPI.begin();
-    delay(1000);
-
-    initializeSdCard();
-
+//    lcd.print("Insera o SDCard");
+//    pinMode(53, OUTPUT);
+//    digitalWrite(53, HIGH);
+//    delay(500);
+//    initializeSdCard();
+//    delay(500);
+  
     file.open("TempCicle.csv", FILE_READ);
     file.close();
-    delay(100);
-    Serial.println(digitalRead(A8));
-                                 
-    initRTC();
-    initMenu();
-    
+    delay(500);
+    Serial.println(digitalRead(53));     
+        
     lcd.clear();
     lcd.print("Unioeste-CSC");
         
@@ -587,21 +602,21 @@ void loop()
 {
     if(!isSDCardInserted())
     {
-        sdcardOK = false;
+        //lcd.clear();
+        lcd.setCursor(0,0);
+        lcd.print("Insira o SDCard");
+        lcd.setCursor(0,1);
+        lcd.print("ou reinsira o SDCard");
+        sdcardOK = false;        
+    }else if(!sdcardOK) {
+      initializeSdCard();
     }
-
-//    if(!sdcardOK)
-//    {
-//        initializeSdCard();   
-//    }
 
     checkButtons(); 
 
     if(!logging)
     {
-        //Configura a saida do Rele de Estado Sólido como desligado
-        pinMode(SSR, OUTPUT);
-        digitalWrite(SSR, LOW);
+        inativar();
     }
     
     wdt_reset();   
